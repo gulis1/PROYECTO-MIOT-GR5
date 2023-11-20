@@ -1,4 +1,4 @@
-menu "Example Configuration"
+menu "Main configuration"
 
     config ESP_WIFI_SSID
         string "WiFi SSID"
@@ -63,5 +63,18 @@ menu "Example Configuration"
         config ESP_WIFI_AUTH_WAPI_PSK
             bool "WAPI PSK"
     endchoice
+
+    ###menu lector de temperatura
+    config PERIODO_TEMP
+        int "Periodo en segundos de muestreo de la temperatura."
+        default 5
+        help
+            "Intervalo muestreo temperatura"
+    #por ahora no tiene funcion 
+    config PREIODO_BUTTON
+        int "Periodo en segundos de muestreo del boton."
+        default 5
+        help
+            VALORES
 
 endmenu
