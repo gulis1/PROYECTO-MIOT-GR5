@@ -5,9 +5,10 @@
 #include <nvs_flash.h>
 
 #include <esp_wifi.h>
-#include <protocol_examples_common.h> // TODO: quitar esto cuando tengamos el wifi bueno.
+//#include <protocol_examples_common.h> // TODO: quitar esto cuando tengamos el wifi bueno.
 #include "main.h"
 #include "mqtt_api.h"
+#include "wifi.h"
 
 const static char* TAG = "main.c";
 
@@ -58,7 +59,12 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
         return;
     }
-    example_connect();
+    ESP_LOGI(TAG, "Connecting to wifi...");
+    err = wifi_init_sta();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
+        return;
+    }
 
     // Creación de la cola.
     queue = xQueueCreate(16, sizeof(transicion_t));
