@@ -72,7 +72,6 @@ void app_main(void) {
     // Creación de la cola.
     queue = xQueueCreate(16, sizeof(transicion_t));
 
-    ESP_LOGI(TAG, "HOLA1");
     // Registro eventos.
     err = esp_event_handler_instance_register(
         ESP_EVENT_ANY_BASE, 
@@ -85,9 +84,8 @@ void app_main(void) {
         return;
     }
 
-    ESP_LOGI(TAG, "HOLA2");
     // Iniciación MQTT.
-    err = mqtt_api_init();
+    err = mqtt_api_init(event_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
         return;
