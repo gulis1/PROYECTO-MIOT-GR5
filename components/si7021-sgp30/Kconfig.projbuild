@@ -1,0 +1,15 @@
+menu "sensores configuration Por ahora no tocar"
+    ###menu lector de temperatura
+    config PERIODO_TEMP
+        int "Periodo en segundos de muestreo de la temperatura."
+        default 5
+        help
+            "Intervalo muestreo temperatura"
+    #por ahora no tiene funcion 
+    config PREIODO_BUTTON
+        int "Periodo en segundos de muestreo del boton."
+        default 5
+        help
+            VALORES
+
+endmenu

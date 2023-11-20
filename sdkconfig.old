@@ -341,7 +341,7 @@ CONFIG_PARTITION_TABLE_MD5=y
 #
 # Example Configuration
 #
-CONFIG_ESP_WIFI_SSID="rpi-miot xDD"
+CONFIG_ESP_WIFI_SSID="rpi-miot"
 CONFIG_ESP_WIFI_PASSWORD="RPI-MIOT-2223"
 # CONFIG_ESP_WPA3_SAE_PWE_HUNT_AND_PECK is not set
 # CONFIG_ESP_WPA3_SAE_PWE_HASH_TO_ELEMENT is not set
@@ -357,6 +357,14 @@ CONFIG_ESP_WIFI_AUTH_WPA2_PSK=y
 # CONFIG_ESP_WIFI_AUTH_WPA2_WPA3_PSK is not set
 # CONFIG_ESP_WIFI_AUTH_WAPI_PSK is not set
 # end of Example Configuration
+
+#
+# MQTT configuration
+#
+CONFIG_MQTT_BROKER_URL=""
+CONFIG_MQTT_USERNAME=""
+CONFIG_MQTT_PASSWORD=""
+# end of MQTT configuration
 
 #
 # Compiler options
