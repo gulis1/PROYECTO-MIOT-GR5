@@ -47,12 +47,6 @@ void app_main(void) {
 
     esp_err_t err;
 
-    // Creación del default event loop.
-    err = esp_event_loop_create_default();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en esp_event_loop_create_default: %s", esp_err_to_name(err));
-        return;
-    }
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -66,9 +60,17 @@ void app_main(void) {
         return;
     }
 
+    // Creación del default event loop.
+    err = esp_event_loop_create_default();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en esp_event_loop_create_default: %s", esp_err_to_name(err));
+        return;
+    }
+
     // Creación de la cola.
     queue = xQueueCreate(16, sizeof(transicion_t));
 
+    ESP_LOGI(TAG, "HOLA1");
     // Registro eventos.
     err = esp_event_handler_instance_register(
         ESP_EVENT_ANY_BASE, 
@@ -81,6 +83,7 @@ void app_main(void) {
         return;
     }
 
+    ESP_LOGI(TAG, "HOLA2");
     // Iniciación MQTT.
     err = mqtt_api_init();
     if (err != ESP_OK) {
