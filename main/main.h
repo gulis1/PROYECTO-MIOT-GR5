@@ -5,8 +5,8 @@ extern QueueHandle_t fsm_queue;
 // Tipos de datos.
 typedef enum {
 
-    // ESTADO
-    ESTADO_SIN_PROVISION
+    ESTADO_SIN_PROVISION,
+    ESTADO_PROVISIONADO
 
 } estado_t;
 

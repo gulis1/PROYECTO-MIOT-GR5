@@ -16,8 +16,10 @@ const static char* TAG = "main.c";
 void main_task() {
 
     estado_t estado_actual = ESTADO_SIN_PROVISION;
-    init_provision(prov_handler);
-    // TODO: inciar provisionamiento.
+    if (init_provision(prov_handler) != ESP_OK) {
+        ESP_LOGE(TAG, "Provisonment failed.");
+        return;
+    }
 
     while (true) {
 
@@ -57,17 +59,14 @@ void app_main(void) {
         return;
     }
 
-
-    ESP_LOGI(TAG, "Connecting to wifi...");
-    err = wifi_init_sta();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en wifi_init_sta: %s", esp_err_to_name(err));
-        return;
-    }
-
-
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
+
+    err = wifi_init_sta();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
+        return;
+    }
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 
@@ -78,5 +77,5 @@ void app_main(void) {
     }
 
     TaskHandle_t task_handle;
-    xTaskCreate(main_task, "Main task", 2048, NULL, 5, &task_handle);
+    xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }

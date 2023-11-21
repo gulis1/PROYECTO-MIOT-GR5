@@ -12,3 +12,4 @@
 #include "lwip/sys.h"
 
 esp_err_t wifi_init_sta(void);
+esp_err_t wifi_connect(char *ssid, char *password);
