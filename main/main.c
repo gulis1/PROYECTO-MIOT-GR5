@@ -3,12 +3,12 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <nvs_flash.h>
-
 #include <esp_wifi.h>
-//#include <protocol_examples_common.h> // TODO: quitar esto cuando tengamos el wifi bueno.
+
 #include "main.h"
 #include "mqtt_api.h"
 #include "wifi.h"
+#include "provision.h"
 
 const static char* TAG = "main.c";
 
@@ -16,6 +16,7 @@ const static char* TAG = "main.c";
 void main_task() {
 
     estado_t estado_actual = ESTADO_SIN_PROVISION;
+    init_provision(prov_handler);
     // TODO: inciar provisionamiento.
 
     while (true) {
@@ -48,12 +49,6 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
         return;
     }
-    ESP_LOGI(TAG, "Connecting to wifi...");
-    err = wifi_init_sta();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
-        return;
-    }
 
     // Creación del default event loop.
     err = esp_event_loop_create_default();
@@ -62,12 +57,21 @@ void app_main(void) {
         return;
     }
 
+
+    ESP_LOGI(TAG, "Connecting to wifi...");
+    err = wifi_init_sta();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en wifi_init_sta: %s", esp_err_to_name(err));
+        return;
+    }
+
+
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 
-    err = mqtt_api_init(mqtt_handler);
+    err = mqtt_init(mqtt_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
         return;
