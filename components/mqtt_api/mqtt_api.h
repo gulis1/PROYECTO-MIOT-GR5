@@ -14,7 +14,7 @@
 
 /* Inicia el componente MQQT. Recibe como parámetro 
    el event handler para los eventos que postea.*/
-esp_err_t mqtt_api_init(void *event_handler);
+esp_err_t mqtt_api_init(void *mqtt_handler);
 
 
 #endif
