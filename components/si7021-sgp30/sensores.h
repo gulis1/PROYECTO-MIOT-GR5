@@ -23,8 +23,9 @@ ESP_EVENT_DECLARE_BASE(SENSORES_EVENT);
 
 
 
-
-void lectura_sensores(void);
+esp_err_t sensores_init(void *sensores_handler);
+void sensores_start();
+void monitor_stop();
 
 
 #endif

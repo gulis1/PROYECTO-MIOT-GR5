@@ -20,6 +20,7 @@
 #include <mqtt_client.h>
 
 #include "main.h"
+#include "sensores.h"
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
@@ -43,3 +44,24 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             break;
     }
 }
+
+
+
+
+void sensores_handler (void *event_handler_arg, esp_event_base_t event_base,int32_t event_id, void *event_data){
+
+    const char *TAG_SENSORES ="SENSORES_HANDLER";
+    transicion_t trans;
+    
+    switch (event_id){
+    
+    case SENSORES_ENVIAN_DATO:
+     //envio de datos
+
+     default:
+        ESP_LOGE(TAG_SENSORES, "ERROR");
+
+
+        } 
+    }
+

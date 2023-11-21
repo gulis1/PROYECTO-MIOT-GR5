@@ -9,6 +9,7 @@
 #include "main.h"
 #include "mqtt_api.h"
 #include "wifi.h"
+#include "sensores.h"
 
 const static char* TAG = "main.c";
 
