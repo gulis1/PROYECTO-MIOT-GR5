@@ -17,7 +17,7 @@ estado_t trans_estado_inicial(transicion_t trans) {
 
     switch (trans.tipo) {
         default:
-            return ESTADO_INICIAL;
+            return ESTADO_SIN_PROVISION;
     }
 
 }

@@ -6,13 +6,18 @@ extern QueueHandle_t fsm_queue;
 typedef enum {
 
     // ESTADO
-    ESTADO_INICIAL,
+    ESTADO_SIN_PROVISION
+
 } estado_t;
 
 typedef enum {
 
+    // Transicion provisionamiento ready.
+    TRANS_PROVISION,
+
     // Transiciones MQTT. No se si servirán luego
     // o podremos quitarlos.
+    TRANS_WIFI_READY,
     TRANS_MQTT_CONNECTED,
     TRANS_MQTT_DISCONNECTED
 
