@@ -12,7 +12,9 @@
 
 // ESP_EVENT_DECLARE_BASE(BOTON_EVENT);
 
-esp_err_t mqtt_api_init();
+/* Inicia el componente MQQT. Recibe como parámetro 
+   el event handler para los eventos que postea.*/
+esp_err_t mqtt_api_init(void *mqtt_handler);
 
 
 #endif
