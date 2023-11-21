@@ -15,7 +15,8 @@ const static char* TAG = "main.c";
 
 void main_task() {
 
-    estado_t estado_actual = ESTADO_INICIAL;
+    estado_t estado_actual = ESTADO_SIN_PROVISION;
+    // TODO: inciar provisionamiento.
 
     while (true) {
 
@@ -27,7 +28,7 @@ void main_task() {
 
         switch (estado_actual) {
 
-            case ESTADO_INICIAL:
+            case ESTADO_SIN_PROVISION:
                 trans_estado_inicial(transicion);
                 break;
                 
@@ -63,12 +64,6 @@ void app_main(void) {
 
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
-
-   
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en esp_event_handler_instance_register: %s", esp_err_to_name(err));
-        return;
-    }
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 
