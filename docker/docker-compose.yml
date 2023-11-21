@@ -1,0 +1,8 @@
+name: pruebas
+services:
+    eclipse-mosquitto:
+        volumes:
+            - ./mosquitto_config:/mosquitto/config
+        ports:
+            - 1883:1883
+        image: eclipse-mosquitto

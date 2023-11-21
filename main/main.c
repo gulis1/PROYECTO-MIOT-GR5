@@ -12,35 +12,29 @@
 
 const static char* TAG = "main.c";
 
-static QueueHandle_t queue;
 
 void main_task() {
 
-    estado_t estado_actual = ESTADO_PLACEHOLDER;
+    estado_t estado_actual = ESTADO_INICIAL;
 
     while (true) {
 
         transicion_t transicion;
-        if (xQueueReceive(queue, &transicion, portMAX_DELAY) == pdFALSE) {
+        if (xQueueReceive(fsm_queue, &transicion, portMAX_DELAY) == pdFALSE) {
             ESP_LOGE(TAG, "Error en xQueueReceive.");
             continue;
         }
 
         switch (estado_actual) {
 
+            case ESTADO_INICIAL:
+                trans_estado_inicial(transicion);
+                break;
+                
             default:
                 ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
         }
     }
-}
-
-// Handler donde se recibirán y procesarán los eventos de todos los componentes.
-void event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-
-
-    // TODO: poner el switch con los eventos.
-    ESP_LOGI(TAG, "Recibido evento de base: %s e id: %ld", event_base, event_id);
-
 }
 
 void app_main(void) {
@@ -68,31 +62,22 @@ void app_main(void) {
     }
 
     // Creación de la cola.
-    queue = xQueueCreate(16, sizeof(transicion_t));
+    fsm_queue = xQueueCreate(16, sizeof(transicion_t));
 
-    ESP_LOGI(TAG, "HOLA1");
-    // Registro eventos.
-    err = esp_event_handler_instance_register(
-        ESP_EVENT_ANY_BASE, 
-        ESP_EVENT_ANY_ID, 
-        event_handler, 
-        NULL, 
-        NULL);
+   
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_event_handler_instance_register: %s", esp_err_to_name(err));
         return;
     }
 
-    ESP_LOGI(TAG, "HOLA2");
-    // Iniciación MQTT.
-    err = mqtt_api_init();
+    // Iniciación MQTT. Se le pasa el handler de los eventos
+    // MQTT para que se registre. 
+    err = mqtt_api_init(mqtt_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
         return;
     }
 
-
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 2048, NULL, 5, &task_handle);
-
 }
