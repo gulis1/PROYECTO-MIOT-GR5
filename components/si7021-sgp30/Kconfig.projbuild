@@ -1,4 +1,4 @@
-menu "sensores configuration Por ahora no tocar"
+menu "Sensores configuration. Por ahora no tocar"
     ###menu lector de temperatura
     config PERIODO_TEMP
         int "Periodo en segundos de muestreo de la temperatura."

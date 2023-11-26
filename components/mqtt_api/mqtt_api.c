@@ -9,7 +9,7 @@ const static char *TAG = "MQTT";
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 
 
-esp_err_t mqtt_api_init(void *mqtt_handler) {
+esp_err_t mqtt_init(void *mqtt_handler) {
 
     esp_err_t err;
 
@@ -32,5 +32,13 @@ esp_err_t mqtt_api_init(void *mqtt_handler) {
         return err;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t mqtt_start() {
     return esp_mqtt_client_start(mqtt_client);
+}
+
+esp_err_t mqtt_stop() {
+    return esp_mqtt_client_stop(mqtt_client);
 }

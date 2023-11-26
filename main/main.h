@@ -5,14 +5,19 @@ extern QueueHandle_t fsm_queue;
 // Tipos de datos.
 typedef enum {
 
-    // ESTADO
-    ESTADO_INICIAL,
+    ESTADO_SIN_PROVISION,
+    ESTADO_PROVISIONADO
+
 } estado_t;
 
 typedef enum {
 
+    // Transicion provisionamiento ready.
+    TRANS_PROVISION,
+
     // Transiciones MQTT. No se si servirán luego
     // o podremos quitarlos.
+    TRANS_WIFI_READY,
     TRANS_MQTT_CONNECTED,
     TRANS_MQTT_DISCONNECTED
 
@@ -27,6 +32,7 @@ typedef struct {
 
 // Handlers para eventos.
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sensores_handler (void *event_handler_arg, esp_event_base_t event_base,int32_t event_id, void *event_data);
 
 
