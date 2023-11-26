@@ -11,6 +11,12 @@ const static char* TAG = "Lectura de sensores";
 static esp_timer_handle_t periodic_timer;
 static esp_event_loop_handle_t sensores_event_handle=NULL;
 
+
+// crear la estatica de la estructura
+static data_sensores DATA_SENSORES;
+
+
+
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
 
@@ -45,7 +51,14 @@ static void lectura_sensores_callback(){
 
         readTemperature(0, &temp);
         ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
-        ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &temp, sizeof(temp), portMAX_DELAY)); //¿envio de datos de los demas? envia un evento cada segundo con el dato
+
+        // Estructuracion de los datos para enviar 
+        DATA_SENSORES.CO2_dato=&main_sgp30_sensor.eCO2;
+        DATA_SENSORES.TVOC_dato=&main_sgp30_sensor.TVOC;
+        DATA_SENSORES.temp_dato=temp;
+
+        //Envio post
+        ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &DATA_SENSORES, sizeof(DATA_SENSORES), portMAX_DELAY));
             }
     }
     
@@ -72,7 +85,7 @@ void sensores_start(){
         ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, CONFIG_PERIODO_TEMP * 1000000));
 }
 
-void monitor_stop(){    
+void sensores_stop(){    
     ESP_ERROR_CHECK(esp_timer_stop(periodic_timer));
 }
 

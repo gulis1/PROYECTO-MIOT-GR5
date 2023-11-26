@@ -28,6 +28,10 @@ estado_t trans_estado_inicial(transicion_t trans) {
             ESP_ERROR_CHECK(wifi_connect(prov->wifi_ssid, prov->wifi_pass));
 
             return ESTADO_PROVISIONADO;
+
+        case TRANS_SENSORIZACION:
+            //prueba
+            //provision
             
         default:
             return ESTADO_SIN_PROVISION;

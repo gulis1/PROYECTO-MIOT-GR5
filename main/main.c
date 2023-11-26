@@ -77,6 +77,13 @@ void app_main(void) {
         return;
     }
 
+    //Inicio de sensores
+    err=mqtt_init(sensores_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
+        return;
+    }
+
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }

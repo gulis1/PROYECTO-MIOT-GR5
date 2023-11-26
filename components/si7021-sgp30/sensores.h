@@ -21,11 +21,15 @@ enum{
 
 ESP_EVENT_DECLARE_BASE(SENSORES_EVENT);
 
-
+typedef struct {
+    uint16_t* TVOC_dato;
+    uint16_t* CO2_dato;
+    float temp_dato; 
+} data_sensores;
 
 esp_err_t sensores_init(void *sensores_handler);
 void sensores_start();
-void monitor_stop();
+void sensores_stop();
 
 
 #endif

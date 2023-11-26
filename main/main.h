@@ -6,7 +6,9 @@ extern QueueHandle_t fsm_queue;
 typedef enum {
 
     ESTADO_SIN_PROVISION,
-    ESTADO_PROVISIONADO
+    ESTADO_PROVISIONADO,
+    //Estado Actual sensorizar
+    ESTADO_SENSORIZANDO
 
 } estado_t;
 
@@ -19,7 +21,9 @@ typedef enum {
     // o podremos quitarlos.
     TRANS_WIFI_READY,
     TRANS_MQTT_CONNECTED,
-    TRANS_MQTT_DISCONNECTED
+    TRANS_MQTT_DISCONNECTED,
+    //transcicion para para pasar a sensorizar 
+    TRANS_SENSORIZACION
 
 } tipo_transicion_t;
 

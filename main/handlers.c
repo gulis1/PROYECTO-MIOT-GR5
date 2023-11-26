@@ -45,3 +45,52 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             break;
     }
 }
+
+//esto se puede comentar para el merge
+void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    ESP_LOGI("PROV_HANDLER", "Evento de provisionamiento recibido.");
+
+    transicion_t trans;
+    switch (event_id) {
+
+        case PROV_DONE:
+
+            prov_info_t *provinfo = *((prov_info_t**)event_data);
+            trans.tipo = TRANS_PROVISION;
+            trans.dato = provinfo;
+
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+        
+        case PROV_ERROR:
+            // TODO
+            break;
+
+        default:
+            ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
+
+    }
+}
+/////////////////////////////////////////////
+//este es el handler de los valores
+void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    ESP_LOGI("SENSORES_HANDLER", "EVENTO DE DATOS ENVIADOS RECIBIDO"); //Evento de provisionamiento recibido.  
+
+    transicion_t trans;
+    switch (event_id) {
+
+        case SENSORES_ENVIAN_DATO:      
+            trans.tipo = TRANS_SENSORIZACION;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        default:
+            ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
+
+    }
+}
+
+
+
