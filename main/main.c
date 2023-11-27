@@ -11,7 +11,12 @@
 #include "provision.h"
 #include "sensores.h"
 
+
+
 const static char* TAG = "main.c";
+
+
+char Current_Date_Time[100];
 
 
 void main_task() {
@@ -68,6 +73,11 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
         return;
     }
+
+    //sincornizacion de hora
+    Set_SystemTime_SNTP();
+	Get_current_date_time(Current_Date_Time);
+	ESP_LOGI("HORA SINCRONIZACION","current date and time is = %s\n",Current_Date_Time);
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 

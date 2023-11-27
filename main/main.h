@@ -40,5 +40,14 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void sensores_handler (void *event_handler_arg, esp_event_base_t event_base,int32_t event_id, void *event_data);
 
 
+// // Hora protocolo SNTP
+void Get_current_date_time(char *date_time);
+void time_sync_notification_cb(struct timeval *tv); 
+void initialize_sntp(void);
+void obtain_time(void);
+void Set_SystemTime_SNTP();
+
+
+
 // Transiciones
 estado_t trans_estado_inicial(transicion_t trans);
