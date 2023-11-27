@@ -20,6 +20,7 @@
 #include <mqtt_client.h>
 
 #include "main.h"
+#include "wifi.h"
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
@@ -40,6 +41,20 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
         case MQTT_EVENT_DISCONNECTED:
             trans.tipo = TRANS_MQTT_DISCONNECTED;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+    }
+}
+
+void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+
+    const char *TAG = "WIFI_HANDLER";
+     ESP_LOGI(TAG, "KLK BRO\n");
+
+    switch (event_id) {
+
+        case WIFI_EVENT_STA_CONNECTED:
+            ESP_LOGI(TAG, "IP ACQUIRED\n");
             break;
     }
 }

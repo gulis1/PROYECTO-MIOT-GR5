@@ -68,7 +68,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-esp_err_t wifi_init_sta(void)
+esp_err_t wifi_init_sta(void *wifi_handler)
 {
     s_wifi_event_group = xEventGroupCreate();
     esp_err_t err;
@@ -102,6 +102,14 @@ esp_err_t wifi_init_sta(void)
                                                         &event_handler,
                                                         NULL,
                                                         &instance_got_ip);
+    if (err != ESP_OK) {
+        return err;
+    }
+    err = esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        wifi_handler,
+                                                        NULL,
+                                                        &instance_any_id);
     if (err != ESP_OK) {
         return err;
     }

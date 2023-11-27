@@ -11,7 +11,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-esp_err_t wifi_init_sta(void);
+esp_err_t wifi_init_sta(void *wifi_handler);
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data);

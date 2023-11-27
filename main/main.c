@@ -49,9 +49,9 @@ void app_main(void) {
         return;
     }
     ESP_LOGI(TAG, "Connecting to wifi...");
-    err = wifi_init_sta();
+    err = wifi_init_sta(wifi_handler);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Error en wifi: %s", esp_err_to_name(err));
         return;
     }
 

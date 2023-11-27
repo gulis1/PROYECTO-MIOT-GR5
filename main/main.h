@@ -32,7 +32,7 @@ typedef struct {
 
 // Handlers para eventos.
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-
+void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 // Transiciones
 estado_t trans_estado_inicial(transicion_t trans);
