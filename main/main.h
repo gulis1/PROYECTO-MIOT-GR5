@@ -8,7 +8,9 @@ typedef enum {
     ESTADO_SIN_PROVISION,
     ESTADO_PROVISIONADO,
     ESTADO_CONECTADO,
-    ESTADO_MQTT_READY,
+    ESTADO_MQTT_READY,,
+    //Estado Actual sensorizar
+    ESTADO_SENSORIZANDO
 
 } estado_t;
 
@@ -22,7 +24,9 @@ typedef enum {
     TRANS_WIFI_READY,
     TRANS_WIFI_DISCONECT,
     TRANS_MQTT_CONNECTED,
-    TRANS_MQTT_DISCONNECTED
+    TRANS_MQTT_DISCONNECTED,
+    //transcicion para para pasar a sensorizar 
+    TRANS_SENSORIZACION
 
 } tipo_transicion_t;
 
@@ -37,6 +41,7 @@ typedef struct {
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+
 
 // Transiciones
 estado_t trans_estado_inicial(transicion_t trans);

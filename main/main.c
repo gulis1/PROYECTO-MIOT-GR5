@@ -9,8 +9,14 @@
 #include "mqtt_api.h"
 #include "wifi.h"
 #include "provision.h"
+#include "sensores.h"
+
+
 
 const static char* TAG = "main.c";
+
+
+char Current_Date_Time[100];
 
 
 void main_task() {
@@ -53,6 +59,14 @@ void app_main(void) {
 
     esp_err_t err;
 
+    //configurando hora
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    
+    
+    
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
