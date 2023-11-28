@@ -115,6 +115,15 @@ esp_err_t wifi_init_sta(void *wifi_handler)
         return err;
     }
 
+    err = esp_event_handler_instance_register(IP_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        wifi_handler,
+                                                        NULL,
+                                                        &instance_any_id);
+    if (err != ESP_OK) {
+        return err;
+    }
+
     err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_wifi_set_mode: %s", esp_err_to_name(err));

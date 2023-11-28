@@ -32,7 +32,14 @@ void main_task() {
         switch (estado_actual) {
 
             case ESTADO_SIN_PROVISION:
-                trans_estado_inicial(transicion);
+                estado_actual = trans_estado_inicial(transicion);
+                break;
+
+            case ESTADO_PROVISIONADO:
+                estado_actual = trans_estado_provisionado(transicion);
+                break;
+
+            case ESTADO_CONECTADO:
                 break;
                 
             default:
@@ -57,7 +64,7 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en esp_event_loop_create_default: %s", esp_err_to_name(err));
         return;
     }
-    
+
     ESP_LOGI(TAG, "Connecting to wifi...");
     err = wifi_init_sta(wifi_handler);
     if (err != ESP_OK) {
@@ -67,12 +74,6 @@ void app_main(void) {
 
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
-
-    err = wifi_init_sta();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
-        return;
-    }
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 
