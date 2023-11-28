@@ -40,6 +40,7 @@ void main_task() {
                 break;
 
             case ESTADO_CONECTADO:
+                estado_actual = trans_estado_conectado(transicion);
                 break;
                 
             default:
