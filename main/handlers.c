@@ -115,6 +115,7 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
         default:
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
     }
+    }
     /////////////////////////////////////////////
     // este es el handler de los sensores
     void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
