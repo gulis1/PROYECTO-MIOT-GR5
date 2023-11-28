@@ -8,6 +8,7 @@ typedef enum {
     ESTADO_SIN_PROVISION,
     ESTADO_PROVISIONADO,
     ESTADO_CONECTADO,
+    ESTADO_MQTT_READY,,
     //Estado Actual sensorizar
     ESTADO_SENSORIZANDO
 
@@ -45,3 +46,4 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 // Transiciones
 estado_t trans_estado_inicial(transicion_t trans);
 estado_t trans_estado_provisionado(transicion_t trans);
+estado_t trans_estado_conectado(transicion_t trans);

@@ -16,6 +16,7 @@
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
+#include "mqtt_api.h"
 
 
 estado_t trans_estado_inicial(transicion_t trans) {
@@ -42,12 +43,22 @@ estado_t trans_estado_provisionado(transicion_t trans) {
         case TRANS_WIFI_READY:
 
             /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
-            printf("HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-
+            mqtt_start();
             return ESTADO_CONECTADO;
             
         default:
             return ESTADO_PROVISIONADO;
     }
+}
 
+estado_t trans_estado_conectado(transicion_t trans) {
+
+    switch (trans.tipo) {
+
+        case TRANS_MQTT_CONNECTED:
+            return ESTADO_MQTT_READY;
+            
+        default:
+            return ESTADO_CONECTADO;
+    }
 }
