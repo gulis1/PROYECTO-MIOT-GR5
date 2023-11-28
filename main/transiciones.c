@@ -17,6 +17,9 @@
 #include "wifi.h"
 #include "provision.h"
 #include "mqtt_api.h"
+#include "sensores.h"
+
+const char *TAG = "transiciones.c";
 
 
 estado_t trans_estado_inicial(transicion_t trans) {
@@ -56,9 +59,39 @@ estado_t trans_estado_conectado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_MQTT_CONNECTED:
+            ESP_LOGI(TAG, "Conectado al broker MQTT");
+            ESP_ERROR_CHECK(init_calibracion());
             return ESTADO_MQTT_READY;
             
         default:
             return ESTADO_CONECTADO;
+    }
+}
+
+estado_t trans_estado_mqtt_ready(transicion_t trans) {
+
+    switch (trans.tipo) {
+
+        case TRANS_CALIBRACION_REALIZADA:
+            ESP_ERROR_CHECK(sensores_start());
+            ESP_LOGI(TAG, "Calibración completada");
+            return ESTADO_CALIBRADO;
+            
+        default:
+            return ESTADO_MQTT_READY;
+    }
+}
+
+estado_t trans_estado_calibrado(transicion_t trans) {
+
+    switch (trans.tipo) {
+
+        case TRANS_LECTURA_SENSORES:
+            data_sensores_t *lecturas = trans.dato;
+            ESP_LOGI(TAG, "Lectura sensores: TVOC: %d,  eCO2: %d y la temperatura: %.3f",  lecturas->TVOC_dato, lecturas->CO2_dato, lecturas->temp_dato);
+            return ESTADO_CALIBRADO;
+            
+        default:
+            return ESTADO_CALIBRADO;
     }
 }

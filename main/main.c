@@ -48,6 +48,14 @@ void main_task() {
             case ESTADO_CONECTADO:
                 estado_actual = trans_estado_conectado(transicion);
                 break;
+
+            case ESTADO_MQTT_READY:
+                estado_actual = trans_estado_mqtt_ready(transicion);
+                break;
+
+            case ESTADO_CALIBRADO:
+                estado_actual = trans_estado_calibrado(transicion);
+                break;
                 
             default:
                 ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
@@ -95,6 +103,12 @@ void app_main(void) {
     err = mqtt_init(mqtt_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
+        return;
+    }
+
+    err = sensores_init(sensores_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en sensores_init: %s", esp_err_to_name(err));
         return;
     }
 

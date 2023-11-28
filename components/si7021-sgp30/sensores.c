@@ -27,7 +27,6 @@ static void lectura_sensores_callback(){
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
-    ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;
@@ -93,7 +92,6 @@ void calibracion() {
     //Envio post
     //ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT,CALIBRACION_REALIZADA, &DATA_SENSORES, sizeof(DATA_SENSORES), portMAX_DELAY));
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT,CALIBRACION_REALIZADA, NULL, sizeof(NULL), portMAX_DELAY));
-    ESP_LOGI(TAG, "Lecturas ejecutando...");
     
     // TODO: guradar valores calibracion en la flash 
 

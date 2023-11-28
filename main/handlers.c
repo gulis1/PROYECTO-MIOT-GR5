@@ -90,14 +90,12 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 
 }
 
-    void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-    {
+void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
-        ESP_LOGI("PROV_HANDLER", "Evento de provisionamiento recibido.");
+    ESP_LOGI("PROV_HANDLER", "Evento de provisionamiento recibido.");
 
-        transicion_t trans;
-        switch (event_id)
-        {
+    transicion_t trans;
+    switch (event_id) {
 
         case PROV_DONE:
 
@@ -115,29 +113,27 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
         default:
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
     }
-    }
-    /////////////////////////////////////////////
-    // este es el handler de los sensores
-    void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-    {
+}
 
-        transicion_t trans;
-        switch (event_id)
-        {
+
+/////////////////////////////////////////////
+// este es el handler de los sensores
+void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    transicion_t trans;
+    switch (event_id) {
         case SENSORES_ENVIAN_DATO:
             data_sensores_t *info_data_sensores_a_pasar = *((data_sensores_t**)event_data);
-            trans.tipo = TRANS_SENSORIZACION;
+            trans.tipo = TRANS_LECTURA_SENSORES;
             trans.dato = info_data_sensores_a_pasar;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            ESP_LOGI("SENSORES_HANDLER", "SENSORES ENVIA DATO");
             break;
 
         case CALIBRACION_REALIZADA:
-            trans.tipo = TRANS_SENSORIZACION;
+            trans.tipo = TRANS_CALIBRACION_REALIZADA;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            ESP_LOGI("SENSORES_HANDLER", "CALIBRACION REALIZADA");
             break;
         default:
             ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
-        }
     }
+}
