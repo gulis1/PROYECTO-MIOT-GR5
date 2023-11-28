@@ -34,3 +34,20 @@ estado_t trans_estado_inicial(transicion_t trans) {
     }
 
 }
+
+estado_t trans_estado_provisionado(transicion_t trans) {
+
+    switch (trans.tipo) {
+
+        case TRANS_WIFI_READY:
+
+            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
+            printf("HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+
+            return ESTADO_CONECTADO;
+            
+        default:
+            return ESTADO_PROVISIONADO;
+    }
+
+}

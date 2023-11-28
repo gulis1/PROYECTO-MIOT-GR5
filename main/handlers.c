@@ -19,6 +19,7 @@
 #include <mqtt_client.h>
 
 #include "main.h"
+#include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
 
@@ -55,6 +56,40 @@
         }
     }
 
+void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    const char *TAG;
+    transicion_t trans;
+    if (event_base == WIFI_EVENT) {
+        TAG = "WIFI_HANDLER";
+         switch (event_id) {
+
+        case WIFI_EVENT_STA_CONNECTED:
+            ESP_LOGI(TAG, "IP ACQUIRED\n");
+            break;
+
+        default:
+            ESP_LOGE("WIFI_HANDLER", "Evento desconocido.");
+        }
+    } 
+    
+    else if (event_base == IP_EVENT) {
+        TAG = "IP_HANDLER";
+        switch (event_id) {
+
+        case IP_EVENT_STA_GOT_IP:
+            trans.tipo=TRANS_WIFI_READY;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            ESP_LOGI(TAG, "IP ACQUIRED\n");
+            break;
+
+        default:
+            ESP_LOGE("IP_HANDLER", "Evento desconocido.");
+        }
+    }
+
+}
+
     void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
     {
 
@@ -79,7 +114,6 @@
 
         default:
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
-        }
     }
     /////////////////////////////////////////////
     // este es el handler de los sensores

@@ -11,5 +11,6 @@
     "string_view": "c",
     "provision.h": "c",
     "esp_sntp.h": "c"
-  }
+  },
+  "idf.portWin": "COM5"
 }
