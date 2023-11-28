@@ -1,6 +1,6 @@
 # Práctica final ANIOT | RPI1 | RPI2
 
-# Sprint 1
+## Sprint 1
 
 - Estructura del proyecto y de la máquina de estados. Aunque el dibujo muestra la idea general, está un poco desactualizado:
    ![](./docs/imagenes/FSM.png) 
