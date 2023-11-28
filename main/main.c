@@ -73,8 +73,6 @@ void app_main(void) {
     time(&now);
     localtime_r(&now, &timeinfo);
     
-    
-    
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
