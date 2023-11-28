@@ -66,9 +66,10 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-esp_err_t wifi_init_sta(void) {
+esp_err_t wifi_init_sta(void *wifi_handler)
+{
+    //s_wifi_event_group = xEventGroupCreate();
     esp_err_t err;
-
     err = (esp_netif_init());
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_netif_init: %s", esp_err_to_name(err));
@@ -105,36 +106,67 @@ esp_err_t wifi_init_sta(void) {
         ESP_LOGE(TAG, "Error en esp_event_handler_instance_register: %s", esp_err_to_name(err));
         return err;
     }
+    err = esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        wifi_handler,
+                                                        NULL,
+                                                        &instance_any_id);
+    if (err != ESP_OK) {
+        return err;
+    }
 
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            /* Authmode threshold resets to WPA2 as default if password matches WPA2 standards (pasword len => 8).
-             * If you want to connect the device to deprecated WEP/WPA networks, Please set the threshold value
-             * to WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK and set the password with length and format matching to
-             * WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK standards.
-             */
-            .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
-            .sae_pwe_h2e = ESP_WIFI_SAE_MODE,
-            .sae_h2e_identifier = EXAMPLE_H2E_IDENTIFIER,
-        },
-    };
+    err = esp_event_handler_instance_register(IP_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        wifi_handler,
+                                                        NULL,
+                                                        &instance_any_id);
+    if (err != ESP_OK) {
+        return err;
+    }
+
     err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_wifi_set_mode: %s", esp_err_to_name(err));
         return err;
     }
+
+    // TODO: recibir un handler por el parámetro
+    // para enviar eventos al main.
+    
+    return ESP_OK;
+}
+
+esp_err_t wifi_connect(char *ssid, char *password) {
+
+    esp_err_t err;
+    wifi_config_t wifi_config = {
+        .sta = {
+            .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
+            .sae_pwe_h2e = ESP_WIFI_SAE_MODE,
+            .sae_h2e_identifier = EXAMPLE_H2E_IDENTIFIER,
+        },
+    };
+
+    if (strlen(ssid) > 31 || strlen(password) > 63) {
+        ESP_LOGE(TAG, "SSID or password too long.");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    strcpy((char*) wifi_config.sta.ssid, ssid);
+    strcpy((char*) wifi_config.sta.password, password);
+
+    ESP_LOGI(TAG, "Connecting to wifi %s with password %s", wifi_config.sta.ssid, wifi_config.sta.password);
     err = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_wifi_set_config: %s", esp_err_to_name(err));
         return err;
     }
+
     err = esp_wifi_start();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_wifi_start: %s", esp_err_to_name(err));
         return err;
-    }
-    
+    }    
+
     return ESP_OK;
 }

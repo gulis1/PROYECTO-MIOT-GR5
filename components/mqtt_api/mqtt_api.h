@@ -11,4 +11,5 @@ esp_err_t mqtt_init(void *mqtt_handler);
 
 esp_err_t mqtt_start();
 esp_err_t mqtt_stop();
+esp_err_t mqtt_send(char *topic, char *data, int qos);
 #endif

@@ -20,6 +20,8 @@
 #include <mqtt_client.h>
 
 #include "main.h"
+#include "wifi.h"
+#include "provision.h"
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
@@ -28,7 +30,6 @@ QueueHandle_t fsm_queue;
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
     ESP_LOGI("MQTT_HANDLER", "Evento de MQTT recibido.");
-
 
     transicion_t trans;
     switch (event_id) {
@@ -45,7 +46,61 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
+void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    const char *TAG;
+    transicion_t trans;
+    if (event_base == WIFI_EVENT) {
+        TAG = "WIFI_HANDLER";
+        switch (event_id) {
+
+            case WIFI_EVENT_STA_CONNECTED:
+                ESP_LOGI(TAG, "IP ACQUIRED\n");
+                break;
+
+            default:
+                ESP_LOGE("WIFI_HANDLER", "Evento desconocido.");
+            }
+    } 
+    
+    else if (event_base == IP_EVENT) {
+        TAG = "IP_HANDLER";
+        switch (event_id) {
+            
+            case IP_EVENT_STA_GOT_IP:
+                trans.tipo=TRANS_WIFI_READY;
+                xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+                ESP_LOGI(TAG, "IP ACQUIRED\n");
+                break;
+
+            default:
+                ESP_LOGE("IP_HANDLER", "Evento desconocido.");
+        }
+    }
+
+}
+
 void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
     ESP_LOGI("PROV_HANDLER", "Evento de provisionamiento recibido.");
+
+    transicion_t trans;
+    switch (event_id) {
+
+        case PROV_DONE:
+
+            prov_info_t *provinfo = *((prov_info_t**)event_data);
+            trans.tipo = TRANS_PROVISION;
+            trans.dato = provinfo;
+
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+        
+        case PROV_ERROR:
+            // TODO
+            break;
+
+        default:
+            ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
+    }
 }
