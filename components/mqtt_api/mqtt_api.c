@@ -42,3 +42,12 @@ esp_err_t mqtt_start() {
 esp_err_t mqtt_stop() {
     return esp_mqtt_client_stop(mqtt_client);
 }
+
+esp_err_t mqtt_send(char *topic, char *data, int qos) {
+    
+    if (esp_mqtt_client_publish(mqtt_client, topic, data, 0, qos, 0) != -1)
+        return ESP_OK;
+    else
+        return ESP_FAIL;
+    
+}
