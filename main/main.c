@@ -51,6 +51,14 @@ void app_main(void) {
 
     esp_err_t err;
 
+    //configurando hora
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    
+    
+    
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -74,21 +82,14 @@ void app_main(void) {
         return;
     }
 
-    //sincornizacion de hora
-    Set_SystemTime_SNTP();
-	Get_current_date_time(Current_Date_Time);
-	ESP_LOGI("HORA SINCRONIZACION","current date and time is = %s\n",Current_Date_Time);
+    //obteniendo hora
+    obtain_time();
+    ESP_LOGI("HORA","sacando la hora %d", time(&now));
+
 
     // Iniciación MQTT. Se le pasa el handler de los eventos
     // MQTT para que se registre. 
     err = mqtt_init(mqtt_handler);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
-        return;
-    }
-
-    //Inicio de sensores
-    err=mqtt_init(sensores_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
         return;

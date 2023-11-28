@@ -9,6 +9,7 @@
     "array": "c",
     "string": "c",
     "string_view": "c",
-    "provision.h": "c"
+    "provision.h": "c",
+    "esp_sntp.h": "c"
   }
 }
