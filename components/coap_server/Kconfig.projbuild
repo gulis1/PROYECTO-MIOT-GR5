@@ -1,17 +1,7 @@
-menu "MQTT configuration"
+menu "COAP configuration"
 
-    config MQTT_BROKER_URL
-        string "MQTT broker url"
+    config COAP_SERVER_URL
+        string "COAP server uri"
         help
-            URL of the MQTT broker.
-
-    config MQTT_USERNAME
-        string "MQTT broker username"
-        help
-            Username to access the MQTT broker.
-
-    config MQTT_PASSWORD
-        string "MQTT broker password"
-        help
-            Password to access the MQTT broker.
+            URL of the COAP server.
 endmenu

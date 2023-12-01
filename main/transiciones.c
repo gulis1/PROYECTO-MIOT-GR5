@@ -18,6 +18,7 @@
 #include "provision.h"
 #include "mqtt_api.h"
 #include "sensores.h"
+#include "coap_client.h"
 
 const char *TAG = "transiciones.c";
 
@@ -87,8 +88,13 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
+            
             data_sensores_t *lecturas = trans.dato;
-            ESP_LOGI(TAG, "Lectura sensores: TVOC: %d,  eCO2: %d y la temperatura: %.3f",  lecturas->TVOC_dato, lecturas->CO2_dato, lecturas->temp_dato);
+            char json_buffer[128];
+            sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
+            // mqtt_send("v1/devices/me/telemetry", json_buffer, 0);
+            coap_client_send(json_buffer);
+            ESP_LOGI(TAG, "%s", json_buffer);
             return ESTADO_CALIBRADO;
             
         default:

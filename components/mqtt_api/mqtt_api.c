@@ -16,7 +16,6 @@ esp_err_t mqtt_init(void *mqtt_handler) {
     esp_mqtt_client_config_t mqtt_config = {
         .broker.address.uri = CONFIG_MQTT_BROKER_URL,
         .credentials.username = CONFIG_MQTT_USERNAME,
-        .credentials.authentication.password = CONFIG_MQTT_PASSWORD,       
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);

@@ -10,7 +10,7 @@
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-#include "coap_server.h"
+#include "coap_client.h"
 
 const static char* TAG = "main.c";
 
@@ -109,7 +109,8 @@ void app_main(void) {
         return;
     }
 
-    err = coap_server_init();
+
+    err = coap_client_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en coap_server_init: %s", esp_err_to_name(err));
         return;
