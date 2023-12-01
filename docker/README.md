@@ -12,3 +12,6 @@ Abre un servidor mosquitto en el puerto 1883 con las siguientes credenciales:
 
     Usuario: user
     Contraseña: password
+    url:mqtt://<ip portatil broker>
+
+    configuracion en menuconfig

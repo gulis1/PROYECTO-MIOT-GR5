@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <time.h>
 #include "SGP30.h"
 #include <sensores.h>
 #include "si7021.h" //creo que se puede borrar 
@@ -5,6 +7,8 @@
 #include <driver/i2c.h>
 #include <esp_event.h>
 #include "esp_timer.h"
+#include "main.h"
+//#include "configuracion_hora.h"
 
 const static char* TAG = "Lectura de sensores";
 
@@ -21,12 +25,17 @@ static data_sensores_t DATA_SENSORES;
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
 
+static int conteo=0;
+//char buffer[80];
+
+
 
 static void lectura_sensores_callback(){
 
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
+    ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;
@@ -123,13 +132,4 @@ esp_err_t sensores_stop(){
     return ESP_OK;
 }
 
-
-
-
-
-
-
-// ESP_LOGI(TAG, "HOLA3"); Para el main
-//     //Iniciacion sensores
-//     sensores_init();
-//     sensores_start();
+//TODOANGEL: elemento json funcion que develva el objeto.
