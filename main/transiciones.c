@@ -93,8 +93,8 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             char json_buffer[128];
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
             // mqtt_send("v1/devices/me/telemetry", json_buffer, 0);
-            coap_client_send(json_buffer);
             ESP_LOGI(TAG, "%s", json_buffer);
+            coap_client_send(json_buffer);
             return ESTADO_CALIBRADO;
             
         default:
