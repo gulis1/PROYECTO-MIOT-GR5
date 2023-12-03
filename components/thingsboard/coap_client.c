@@ -18,17 +18,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/param.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/event_groups.h>
+#include <esp_log.h>
+#include <esp_event.h>
+#include <coap3/coap.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-
-#include "esp_log.h"
-#include "esp_event.h"
-
-
-
-#include "coap3/coap.h"
 
 
 const static char *TAG = "CoAP_client";
@@ -36,8 +32,11 @@ const static char *TAG = "CoAP_client";
 static int resp_wait = 1;
 static char *COAP_SERVER_URI = NULL;
 static coap_context_t *coap_ctx = NULL;
-static coap_optlist_t *optlist = NULL;
 static coap_session_t *coap_session = NULL;
+
+
+static coap_optlist_t *optlist_telemetry = NULL;
+
 
 static coap_response_t
 message_handler(coap_session_t *session,
@@ -73,7 +72,6 @@ message_handler(coap_session_t *session,
     resp_wait = 0;
     return COAP_RESPONSE_OK;
 }
-
 
 static coap_address_t *coap_get_address(coap_uri_t *uri) {
     static coap_address_t dst_addr;
@@ -129,55 +127,11 @@ static coap_address_t *coap_get_address(coap_uri_t *uri) {
     return &dst_addr;
 }
 
-// static int coap_build_optlist(coap_uri_t *uri) {
-// #define BUFSIZE 40
-//     unsigned char _buf[BUFSIZE];
-//     unsigned char *buf;
-//     size_t buflen;
-//     int res;
-
-//     optlist = NULL;
-
-//     if (uri->scheme == COAP_URI_SCHEME_COAPS && !coap_dtls_is_supported()) {
-//         ESP_LOGE(TAG, "MbedTLS DTLS Client Mode not configured");
-//         return 0;
-//     }
-//     if (uri->scheme == COAP_URI_SCHEME_COAPS_TCP && !coap_tls_is_supported()) {
-//         ESP_LOGE(TAG, "MbedTLS TLS Client Mode not configured");
-//         return 0;
-//     }
-//     if (uri->scheme == COAP_URI_SCHEME_COAP_TCP && !coap_tcp_is_supported()) {
-//         ESP_LOGE(TAG, "TCP Client Mode not configured");
-//         return 0;
-//     }
-
-
-//     if (uri->path.length) {
-//         buflen = BUFSIZE;
-//         buf = _buf;
-//         res = coap_split_path(uri->path.s, uri->path.length, buf, &buflen);
-
-//         while (res--) {
-//             if (0 == coap_insert_optlist(&optlist,
-//                                 coap_new_optlist(COAP_OPTION_URI_PATH,
-//                                                  coap_opt_length(buf),
-//                                                  coap_opt_value(buf))))
-//             {
-//                 ESP_LOGE(TAG, "Error en coap_insert_optlist()");
-//                 return ESP_FAIL; 
-//             }
-
-//             buf += coap_opt_size(buf);
-//         }
-//     }
-
-//     return 1;
-// }
-
 esp_err_t coap_client_init() {
 
     coap_address_t *dst_addr;
     static coap_uri_t uri;
+
     
     // TODO: hacer esto bien.
     COAP_SERVER_URI = malloc(256); 
@@ -185,7 +139,7 @@ esp_err_t coap_client_init() {
         ESP_LOGE(TAG, "Error en malloc para COAP_SERVER_URI.");
         return ESP_ERR_NO_MEM;
     }
-    sprintf(COAP_SERVER_URI, "%s/api/v1/EMVOGeMEZleRsT9DRbeD/telemetry", CONFIG_COAP_SERVER_URL);
+    sprintf(COAP_SERVER_URI, "coap://%s/api/v1/%s/telemetry", CONFIG_THINGSBOARD_URL, CONFIG_THINGSBOARD_DEVICE_TOKEN);
     ESP_LOGI(TAG, "COAP URL: %s", COAP_SERVER_URI);
 
     /* Set up the CoAP context */
@@ -202,8 +156,6 @@ esp_err_t coap_client_init() {
         ESP_LOGE(TAG, "Error en coap_split_uri()");
         return ESP_FAIL;
     }
-                            // if (!coap_build_optlist(&uri))
-                            //     return ESP_FAIL;
 
     dst_addr = coap_get_address(&uri);
     if (dst_addr == NULL) {
@@ -226,7 +178,8 @@ esp_err_t coap_client_init() {
         return ESP_FAIL;
     }
     
-    if (coap_insert_optlist(&optlist, opt_format_json) == 0) {
+    optlist_telemetry = NULL;
+    if (coap_insert_optlist(&optlist_telemetry, opt_format_json) == 0) {
         ESP_LOGE(TAG, "Error en coap_insert_optlist()");
         return ESP_FAIL;
     }
@@ -237,7 +190,7 @@ esp_err_t coap_client_init() {
         return ESP_FAIL;
     }
 
-    if (coap_insert_optlist(&optlist, opt_format_path) == 0) {
+    if (coap_insert_optlist(&optlist_telemetry, opt_format_path) == 0) {
         ESP_LOGE(TAG, "Error en coap_insert_optlist()");
         return ESP_FAIL;
     }
@@ -246,7 +199,7 @@ esp_err_t coap_client_init() {
     return ESP_OK;
 }
 
-esp_err_t coap_client_send(char *content) {
+esp_err_t coap_client_send(char *content, coap_optlist_t **optlist) {
     
     size_t tokenlength;
     unsigned char token[8];
@@ -265,7 +218,7 @@ esp_err_t coap_client_send(char *content) {
         return ESP_FAIL;
     }
     
-    if (coap_add_optlist_pdu(request, &optlist) == 0) {
+    if (coap_add_optlist_pdu(request, optlist) == 0) {
         ESP_LOGE(TAG, "Error en coap_add_optlist_pdu()");
         return ESP_FAIL;
     }
@@ -286,4 +239,8 @@ esp_err_t coap_client_send(char *content) {
     }
 
     return ESP_OK;
+}
+
+esp_err_t coap_client_telemetry_send(char *content) {
+    return coap_client_send(content, &optlist_telemetry);
 }

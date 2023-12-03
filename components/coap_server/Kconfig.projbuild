@@ -1,7 +1,0 @@
-menu "COAP configuration"
-
-    config COAP_SERVER_URL
-        string "COAP server uri"
-        help
-            URL of the COAP server.
-endmenu

@@ -16,11 +16,10 @@
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
-#include "mqtt_api.h"
 #include "sensores.h"
-#include "coap_client.h"
+#include "thingsboard.h"
 
-const char *TAG = "transiciones.c";
+const static char *TAG = "transiciones.c";
 
 
 estado_t trans_estado_inicial(transicion_t trans) {
@@ -46,8 +45,7 @@ estado_t trans_estado_provisionado(transicion_t trans) {
 
         case TRANS_WIFI_READY:
 
-            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
-            mqtt_start();
+            thingsboard_start();
             return ESTADO_CONECTADO;
             
         default:
@@ -59,17 +57,16 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
     switch (trans.tipo) {
 
-        case TRANS_MQTT_CONNECTED:
-            ESP_LOGI(TAG, "Conectado al broker MQTT");
+        case TRANS_THINGSBOARD_READY:
             ESP_ERROR_CHECK(init_calibracion());
-            return ESTADO_MQTT_READY;
+            return ESTADO_THINGSBOARD_READY;
             
         default:
             return ESTADO_CONECTADO;
     }
 }
 
-estado_t trans_estado_mqtt_ready(transicion_t trans) {
+estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
     switch (trans.tipo) {
 
@@ -79,7 +76,7 @@ estado_t trans_estado_mqtt_ready(transicion_t trans) {
             return ESTADO_CALIBRADO;
             
         default:
-            return ESTADO_MQTT_READY;
+            return ESTADO_THINGSBOARD_READY;
     }
 }
 
@@ -88,13 +85,11 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
-            
-            data_sensores_t *lecturas = trans.dato;
             char json_buffer[128];
+            data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
-            // mqtt_send("v1/devices/me/telemetry", json_buffer, 0);
+            thingsboard_telemetry_send(json_buffer);
             ESP_LOGI(TAG, "%s", json_buffer);
-            coap_client_send(json_buffer);
             return ESTADO_CALIBRADO;
             
         default:

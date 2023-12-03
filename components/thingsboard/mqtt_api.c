@@ -8,14 +8,19 @@ const static char *TAG = "MQTT";
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 
-
-esp_err_t mqtt_init(void *mqtt_handler) {
+esp_err_t mqtt_init(void *event_handler) {
 
     esp_err_t err;
+    char mqtt_url[256];
+
+    if (snprintf(mqtt_url, sizeof(mqtt_url), "mqtt://%s", CONFIG_THINGSBOARD_URL) > sizeof(mqtt_url)) {
+        ESP_LOGE(TAG, "mqtt broker URL too large");
+        return ESP_ERR_NO_MEM;
+    }
 
     esp_mqtt_client_config_t mqtt_config = {
-        .broker.address.uri = CONFIG_MQTT_BROKER_URL,
-        .credentials.username = CONFIG_MQTT_USERNAME,
+        .broker.address.uri = mqtt_url,
+        .credentials.username = CONFIG_THINGSBOARD_DEVICE_TOKEN,
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
@@ -25,7 +30,7 @@ esp_err_t mqtt_init(void *mqtt_handler) {
     }
 
     // Registramos los eventos de base MQTT_EVENTS al handler.
-    err = esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_handler, mqtt_client);
+    err = esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, event_handler, mqtt_client);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_mqtt_client_register_event: %s", esp_err_to_name(err));
         return err;

@@ -16,45 +16,25 @@
 
 #include <esp_event.h>
 #include <esp_log.h>
-#include <mqtt_client.h>
+#include <esp_netif.h>
+#include <time.h>
+#include <sys/time.h>
+#include <esp_attr.h>
+#include <esp_sleep.h>
+#include <esp_sntp.h>
 
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
+#include "thingsboard.h"
 
-#include <esp_sntp.h>
-#include <esp_netif.h>
 
-#include <time.h>
-#include <sys/time.h>
-#include "esp_attr.h"
-#include "esp_sleep.h"
-#include "esp_sntp.h"
 
-    // Cola de transiciones para la máquina de estados.
-    QueueHandle_t fsm_queue;
+// Cola de transiciones para la máquina de estados.
+QueueHandle_t fsm_queue;
 
-    void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-    {
 
-        ESP_LOGI("MQTT_HANDLER", "Evento de MQTT recibido.");
-
-        transicion_t trans;
-        switch (event_id)
-        {
-
-        case MQTT_EVENT_CONNECTED:
-            trans.tipo = TRANS_MQTT_CONNECTED;
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            break;
-
-        case MQTT_EVENT_DISCONNECTED:
-            trans.tipo = TRANS_MQTT_DISCONNECTED;
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            break;
-        }
-    }
 
 void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -115,6 +95,28 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
+void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    ESP_LOGI("THINGSBOARD_HANDLER", "Evento de thingsboard recibido.");
+
+    transicion_t trans;
+    switch (event_id) {
+
+        case THINGSBOARD_EVENT_READY:
+
+            trans.tipo = TRANS_THINGSBOARD_READY;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        case THINGSBOARD_EVENT_UNAVAILABLE:
+            trans.tipo = TRANS_THINGSBOARD_UNAVAILABLE;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        default:
+            ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
+    }
+}
 
 /////////////////////////////////////////////
 // este es el handler de los sensores
