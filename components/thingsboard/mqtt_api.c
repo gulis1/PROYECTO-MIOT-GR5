@@ -56,5 +56,5 @@ esp_err_t mqtt_send(char *topic, char *data, int qos) {
 }
 
 esp_err_t mqtt_subscribe(char *topic) {
-    return esp_mqtt_client_subscribe(mqtt_client, topic, 2) != -1 ? ESP_OK : ESP_FAIL;
+    return esp_mqtt_client_subscribe(mqtt_client, topic, 1) != -1 ? ESP_OK : ESP_FAIL;
 }

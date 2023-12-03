@@ -10,22 +10,34 @@
 
 const char *TAG = "thingsboard";
 
-static char *DEVICE_TOKEN = NULL;
+static char *DEVICE_TOKEN = "provision";
 static nvs_handle_t nvshandle;
 
 ESP_EVENT_DEFINE_BASE(THINGSBOARD_EVENT);
 
 #ifdef CONFIG_USE_MQTT
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-
+    ESP_LOGI(TAG, "EVEMTITTTTTTTTTTOO");
     switch (event_id) {
 
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "Conectado al broker MQTT de Thingsboard.");
-            if (DEVICE_TOKEN == NULL) {
+            if (strcmp(DEVICE_TOKEN, "provision") == 0) {
                 // Si no estamos provisionados, nos suscribimos al topic.
                 ESP_LOGI(TAG, "Device token not found, provisioning via Thingsboard.");
-                ESP_ERROR_CHECK(mqtt_subscribe("/provision"));
+                ESP_ERROR_CHECK(mqtt_subscribe("/provision/response"));
+
+                ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
+                cJSON *json = cJSON_CreateObject();
+                cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
+                cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
+                cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
+
+                char *json_payload = cJSON_PrintUnformatted(json);
+                mqtt_send("/provision/request", json_payload, 1);
+                cJSON_free(json);
+                cJSON_free(json_payload);
+                ESP_LOGI(TAG, "Enviada solicitud de provisionamiento");
             }
             else {
                 // Si ya estamos, enviamos el evento de ready directamente.
@@ -34,17 +46,18 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             break;
         
         case MQTT_EVENT_SUBSCRIBED:
-            
-            if (DEVICE_TOKEN == NULL) {
+            if (strcmp(DEVICE_TOKEN, "provision") == 0) {
+                ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
                 cJSON *json = cJSON_CreateObject();
                 cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
                 cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
                 cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
 
                 char *json_payload = cJSON_PrintUnformatted(json);
-                mqtt_send("/provisioning/request", json_payload, 2);
+                mqtt_send("/provision/request", json_payload, 1);
                 cJSON_free(json);
                 cJSON_free(json_payload);
+                ESP_LOGI(TAG, "Enviada solicitud de provisionamiento");
             }
             break;
 
