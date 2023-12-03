@@ -1,3 +1,3 @@
 idf_component_register(SRCS "thingsboard.c" "mqtt_api.c" "coap_client.c"
                     INCLUDE_DIRS .
-                    REQUIRES esp_event espressif__coap mqtt)
+                    REQUIRES esp_event espressif__coap mqtt nvs_flash json)

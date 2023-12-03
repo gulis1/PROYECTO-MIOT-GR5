@@ -37,42 +37,6 @@ static coap_session_t *coap_session = NULL;
 
 static coap_optlist_t *optlist_telemetry = NULL;
 
-
-static coap_response_t
-message_handler(coap_session_t *session,
-                const coap_pdu_t *sent,
-                const coap_pdu_t *received,
-                const coap_mid_t mid)
-{
-    const unsigned char *data = NULL;
-    size_t data_len;
-    size_t offset;
-    size_t total;
-    coap_pdu_code_t rcvd_code = coap_pdu_get_code(received);
-
-    if (COAP_RESPONSE_CLASS(rcvd_code) == 2) {
-        if (coap_get_data_large(received, &data_len, &data, &offset, &total)) {
-            if (data_len != total) {
-                printf("Unexpected partial data received offset %u, length %u\n", offset, data_len);
-            }
-            printf("Received:\n%.*s\n", (int)data_len, data);
-            resp_wait = 0;
-        }
-        return COAP_RESPONSE_OK;
-    }
-    printf("%d.%02d", (rcvd_code >> 5), rcvd_code & 0x1F);
-    if (coap_get_data_large(received, &data_len, &data, &offset, &total)) {
-        printf(": ");
-        while(data_len--) {
-            printf("%c", isprint(*data) ? *data : '.');
-            data++;
-        }
-    }
-    printf("\n");
-    resp_wait = 0;
-    return COAP_RESPONSE_OK;
-}
-
 static coap_address_t *coap_get_address(coap_uri_t *uri) {
     static coap_address_t dst_addr;
     char *phostname = NULL;
@@ -127,7 +91,7 @@ static coap_address_t *coap_get_address(coap_uri_t *uri) {
     return &dst_addr;
 }
 
-esp_err_t coap_client_init() {
+esp_err_t coap_client_init(void *message_handler, char *device_token) {
 
     coap_address_t *dst_addr;
     static coap_uri_t uri;
@@ -139,7 +103,7 @@ esp_err_t coap_client_init() {
         ESP_LOGE(TAG, "Error en malloc para COAP_SERVER_URI.");
         return ESP_ERR_NO_MEM;
     }
-    sprintf(COAP_SERVER_URI, "coap://%s/api/v1/%s/telemetry", CONFIG_THINGSBOARD_URL, CONFIG_THINGSBOARD_DEVICE_TOKEN);
+    sprintf(COAP_SERVER_URI, "coap://%s/api/v1/%s/telemetry", CONFIG_THINGSBOARD_URL, device_token);
     ESP_LOGI(TAG, "COAP URL: %s", COAP_SERVER_URI);
 
     /* Set up the CoAP context */
@@ -150,7 +114,7 @@ esp_err_t coap_client_init() {
     }
     coap_context_set_block_mode(coap_ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY);
 
-    //coap_register_response_handler(ctx, message_handler);
+    coap_register_response_handler(coap_ctx, message_handler);
 
     if (coap_split_uri((const uint8_t *)COAP_SERVER_URI, strlen(COAP_SERVER_URI), &uri) == -1) {
         ESP_LOGE(TAG, "Error en coap_split_uri()");

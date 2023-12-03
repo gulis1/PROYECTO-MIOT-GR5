@@ -4,11 +4,26 @@ menu "Thingsboard configuration"
         string "Thingsboard url"
         help
             URL of Thingsboard instance.
-
-    config THINGSBOARD_DEVICE_TOKEN
-        string "Thingsboard device token"
+    
+    config THINGSBOARD_DEVICE_NAME
+        string "Device name para Thingsboard"
         help
             Temporal, hasta que tengamos el provisionamiento.
+    
+    config THINGSBOARD_PROVISION_DEVICE_KEY
+        string "Device key for Thingsboard provisioning"
+        help
+            Temporal, hasta que tengamos el provisionamiento.
+
+    config THINGSBOARD_PROVISION_DEVICE_SECRET
+        string "Device secret for Thingsboard provisioning"
+        help
+            Temporal, hasta que tengamos el provisionamiento
+
+    # config THINGSBOARD_DEVICE_TOKEN
+    #     string "Thingsboard device token"
+    #     help
+    #         Temporal, hasta que tengamos el provisionamiento.
 
     choice Protocolo
         bool "Protocolo de comunicación"
