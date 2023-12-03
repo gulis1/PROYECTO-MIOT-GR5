@@ -8,7 +8,7 @@ typedef enum {
     ESTADO_SIN_PROVISION,
     ESTADO_PROVISIONADO,
     ESTADO_CONECTADO,
-    ESTADO_MQTT_READY,
+    ESTADO_THINGSBOARD_READY,
     //Estado Actual sensorizar
     ESTADO_CALIBRADO
 
@@ -23,8 +23,8 @@ typedef enum {
     // o podremos quitarlos.
     TRANS_WIFI_READY,
     TRANS_WIFI_DISCONECT,
-    TRANS_MQTT_CONNECTED,
-    TRANS_MQTT_DISCONNECTED,
+    TRANS_THINGSBOARD_READY,
+    TRANS_THINGSBOARD_UNAVAILABLE,
     //transcicion para para pasar a sensorizar 
     TRANS_CALIBRACION_REALIZADA,
     TRANS_LECTURA_SENSORES
@@ -39,7 +39,7 @@ typedef struct {
 
 
 // Handlers para eventos.
-void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
@@ -49,5 +49,5 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
 estado_t trans_estado_inicial(transicion_t trans);
 estado_t trans_estado_provisionado(transicion_t trans);
 estado_t trans_estado_conectado(transicion_t trans);
-estado_t trans_estado_mqtt_ready(transicion_t trans);
+estado_t trans_estado_thingsboard_ready(transicion_t trans);
 estado_t trans_estado_calibrado(transicion_t trans);

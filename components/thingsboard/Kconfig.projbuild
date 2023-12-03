@@ -1,0 +1,25 @@
+menu "Thingsboard configuration"
+
+    config THINGSBOARD_URL
+        string "Thingsboard url"
+        help
+            URL of Thingsboard instance.
+
+    config THINGSBOARD_DEVICE_TOKEN
+        string "Thingsboard device token"
+        help
+            Temporal, hasta que tengamos el provisionamiento.
+
+    choice Protocolo
+        bool "Protocolo de comunicación"
+        default USE_COAP
+
+    config USE_MQTT
+        bool "mqtt"
+
+    config USE_COAP
+        bool "coap"
+
+    endchoice
+
+endmenu

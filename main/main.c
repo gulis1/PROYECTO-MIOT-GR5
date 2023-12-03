@@ -6,12 +6,10 @@
 #include <esp_wifi.h>
 
 #include "main.h"
-#include "mqtt_api.h"
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-
-
+#include "thingsboard.h"
 
 const static char* TAG = "main.c";
 
@@ -49,8 +47,8 @@ void main_task() {
                 estado_actual = trans_estado_conectado(transicion);
                 break;
 
-            case ESTADO_MQTT_READY:
-                estado_actual = trans_estado_mqtt_ready(transicion);
+            case ESTADO_THINGSBOARD_READY:
+                estado_actual = trans_estado_thingsboard_ready(transicion);
                 break;
 
             case ESTADO_CALIBRADO:
@@ -96,17 +94,15 @@ void app_main(void) {
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
 
-    // Iniciación MQTT. Se le pasa el handler de los eventos
-    // MQTT para que se registre. 
-    err = mqtt_init(mqtt_handler);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
-        return;
-    }
-
     err = sensores_init(sensores_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en sensores_init: %s", esp_err_to_name(err));
+        return;
+    }
+
+    err = thingsboard_init(thingsboard_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en thingsboard_init: %s", esp_err_to_name(err));
         return;
     }
 

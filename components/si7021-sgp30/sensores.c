@@ -83,7 +83,6 @@ esp_err_t sensores_init(void *sensores_handler) {
 void calibracion() {
 
     for (int i = 0; i < 14; i++) { 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         sgp30_IAQ_measure(&main_sgp30_sensor);
         ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
     }

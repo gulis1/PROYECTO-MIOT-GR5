@@ -6,9 +6,11 @@ docker compose up -d
 docker compose down
 ```
 
-## Mosquitto
+## Thingboaard
 
-Abre un servidor mosquitto en el puerto 1883 con las siguientes credenciales: 
+Abre una instancia de thingsboard local. Credenciales:
 
-    Usuario: user
-    Contraseña: password
+    
+    Systen Administrator: sysadmin@thingsboard.org / sysadmin
+    Tenant Administrator: tenant@thingsboard.org / tenant       <-- Recomendado
+    Customer User: customer@thingsboard.org / customer
