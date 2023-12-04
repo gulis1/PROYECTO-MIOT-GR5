@@ -70,10 +70,6 @@
 i2c_port_t i2c_num = I2C_MASTER_NUM;
 
 
-static const char *TAG = "sgp30-test";
-
-
-
 esp_err_t i2c_master_driver_initialize(void) {
     int i2c_master_port = I2C_MASTER_NUM;
     i2c_config_t conf;

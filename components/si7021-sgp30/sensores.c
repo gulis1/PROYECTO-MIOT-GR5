@@ -152,12 +152,3 @@ esp_err_t sensores_stop(){
     ESP_ERROR_CHECK(esp_timer_stop(periodic_timer));
     return ESP_OK;
 }
-
-//TODOANGEL: elemento json funcion que develva el objeto.
-
-
-//realizando el return del json
-
-//creacion de json
-
-
