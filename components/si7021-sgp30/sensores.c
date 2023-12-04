@@ -121,14 +121,3 @@ esp_err_t sensores_stop(){
     ESP_ERROR_CHECK(esp_timer_stop(periodic_timer));
     return ESP_OK;
 }
-
-
-
-
-
-
-
-// ESP_LOGI(TAG, "HOLA3"); Para el main
-//     //Iniciacion sensores
-//     sensores_init();
-//     sensores_start();
