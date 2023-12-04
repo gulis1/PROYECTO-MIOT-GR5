@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <time.h>
 #include "SGP30.h"
 #include <sensores.h>
 #include "si7021.h" //creo que se puede borrar 
@@ -5,6 +7,9 @@
 #include <driver/i2c.h>
 #include <esp_event.h>
 #include "esp_timer.h"
+#include "main.h"
+#include "cJSON.h"
+//#include "configuracion_hora.h"
 
 const static char* TAG = "Lectura de sensores";
 
@@ -16,10 +21,32 @@ static sgp30_dev_t main_sgp30_sensor;
 // crear la estatica de la estructura
 static data_sensores_t DATA_SENSORES;
 
+char info;
+
+
 
 
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
+
+static int conteo=0;
+//char buffer[80];
+
+
+char* data_sensores_to_json_string(data_sensores_t* info) {
+
+    cJSON *root = cJSON_CreateObject();
+
+     /// la idea es devolver un objeto json 
+    cJSON_AddNumberToObject(root,"temperatura",info->temp_dato);
+    cJSON_AddNumberToObject(root,"eCO2",info->CO2_dato);
+    cJSON_AddNumberToObject(root,"TVOC",info->TVOC_dato);
+
+    char* json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    return json_string;
+}
 
 
 static void lectura_sensores_callback(){
@@ -27,6 +54,7 @@ static void lectura_sensores_callback(){
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
+    ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;
@@ -36,8 +64,11 @@ static void lectura_sensores_callback(){
     void *dato_sensores =&DATA_SENSORES;
 
     //Envio post
-    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY));
+    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root);
 }
+
+
+
     
 
 esp_err_t sensores_init(void *sensores_handler) {

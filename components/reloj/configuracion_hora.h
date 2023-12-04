@@ -18,5 +18,14 @@
 #include "lwip/ip_addr.h"
 #include "esp_sntp.h"
 
-void sntp_init_hora(void);
-void obtain_time()
+//TODOANGEL: IDENTIFICAR CORRECTAMENTE QUE LIBRERIAS SON MIAS O LAS OTRAS
+
+enum {
+    HORA_CONFIGURADA
+};
+
+ESP_EVENT_DECLARE_BASE(HORA_CONFIG_EVENT);
+
+esp_err_t sntp_init_hora(void *hora_handler);
+esp_err_t init_sincronizacion_hora();
+esp_err_t obtain_time(void); //creo que no haria falta

@@ -1,6 +1,6 @@
-#ifndef SENSORES
+#ifndef SENSORES 
 #define SENSORES
-
+//TODOANGEL: Se puede poner que 
 #include <stdio.h>
 #include <string.h>
 
@@ -17,7 +17,8 @@
 
 enum{
     CALIBRACION_REALIZADA,
-    SENSORES_ENVIAN_DATO
+    SENSORES_ENVIAN_DATO,
+    PASAR_A_DORMIR_2,
 };
 
 ESP_EVENT_DECLARE_BASE(SENSORES_EVENT);
@@ -32,6 +33,8 @@ esp_err_t sensores_init(void *sensores_handler);
 esp_err_t init_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
+void hora(void);
+int data_json ();
 
 
 #endif

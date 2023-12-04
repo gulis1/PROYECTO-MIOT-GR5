@@ -9,19 +9,7 @@
     "array": "c",
     "string": "c",
     "string_view": "c",
-    "provision.h": "c",
-    "esp_sntp.h": "c",
-    "functional": "c",
-    "wifi.h": "c",
-    "sensores.h": "c",
-    "coap.h": "c",
-    "coap_client.h": "c",
-    "event_groups.h": "c",
-    "coap_option.h": "c",
-    "coap_forward_decls.h": "c",
-    "coap_async.h": "c",
-    "coap_block.h": "c",
-    "sockets_ext.h": "c"
+    "provision.h": "c"
   },
   "idf.portWin": "COM5"
 }

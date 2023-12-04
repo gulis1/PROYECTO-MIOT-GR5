@@ -9,7 +9,6 @@ docker compose down
 ## Thingboaard
 
 Abre una instancia de thingsboard local. Credenciales:
-
     
     Systen Administrator: sysadmin@thingsboard.org / sysadmin
     Tenant Administrator: tenant@thingsboard.org / tenant       <-- Recomendado
