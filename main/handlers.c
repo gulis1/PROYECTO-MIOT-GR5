@@ -171,11 +171,11 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
             trans.tipo = TRANS_CALIBRACION_REALIZADA;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
-        case PASAR_A_DORMIR_2:
-            trans.tipo = TRANS_DORMIR;
-            ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR_2");
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            break;
+        // case PASAR_A_DORMIR_2:
+        //     trans.tipo = TRANS_DORMIR;
+        //     ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR_2");
+        //     xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+        //     break;
 
         default:
             ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");

@@ -8,6 +8,7 @@
 #include <esp_event.h>
 #include "esp_timer.h"
 #include "main.h"
+#include "cJSON.h"
 //#include "configuracion_hora.h"
 
 const static char* TAG = "Lectura de sensores";
@@ -133,3 +134,8 @@ esp_err_t sensores_stop(){
 }
 
 //TODOANGEL: elemento json funcion que develva el objeto.
+
+
+//realizando el return del json
+
+//creacion de json

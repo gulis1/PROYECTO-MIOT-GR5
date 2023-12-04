@@ -70,6 +70,7 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
         case TRANS_SINCRONIZAR:
             ESP_LOGI(TAG,"sincronizacion realizada");
+            traspaso=1;
             mqtt_start();
             return ESTADO_HORA_CONFIGURADA;
             
@@ -112,11 +113,10 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
             ESP_LOGI(TAG, "Conectado al broker MQTT");
             ESP_ERROR_CHECK(init_calibracion());
             return ESTADO_MQTT_READY;
-        
-        case TRANS_DORMIR: 
-        //data_sensores_t *lecturas = trans.dato;
-        ESP_ERROR_CHECK(deep_sleep());
-        return ESTADO_DORMIDO;
+        // case TRANS_DORMIR: 
+        // //data_sensores_t *lecturas = trans.dato;
+        // ESP_ERROR_CHECK(deep_sleep());
+        // return ESTADO_DORMIDO;
             
         default:
             return ESTADO_CONECTADO;

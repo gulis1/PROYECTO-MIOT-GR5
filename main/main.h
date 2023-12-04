@@ -3,6 +3,7 @@
 extern QueueHandle_t fsm_queue;
 extern char strftime_buf[64];
 extern char hora_actual[80]; //TODOANGEL: se puede poner 64
+extern int traspaso;
 
 
 // extern time_t ahora;
@@ -57,6 +58,8 @@ typedef struct {
 
 //auxiliar hora, para obtener la hora actual correcta (despues de sincronizarse) en cada modificacion de estado;
 extern void hora(void);
+extern esp_err_t comienza_reloj();
+extern esp_err_t power_manager_init();
 
 
 // Handlers para eventos.
@@ -65,6 +68,7 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 
 // Transiciones

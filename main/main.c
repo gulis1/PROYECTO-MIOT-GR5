@@ -16,11 +16,9 @@
 
 
 const static char* TAG = "main.c";
-char hora_actual[80];
+
 
 void main_task() {
-
-    //int conteo=0;
 
     estado_t estado_actual = ESTADO_SIN_PROVISION;
     if (init_provision(prov_handler) != ESP_OK) {
@@ -35,13 +33,6 @@ void main_task() {
             ESP_LOGE(TAG, "Error en xQueueReceive.");
             continue;
         }
-    
-        hora();
-        strcpy(strftime_buf, hora_actual);
-        ESP_LOGI("Status_hora","La hora es %s",strftime_buf);
-
-
-        
 
         switch (estado_actual) {
 
@@ -78,8 +69,6 @@ void main_task() {
         }
     }
 }
-
-
 
 
 void app_main(void) {
@@ -132,13 +121,25 @@ void app_main(void) {
     }
 
 
-    err = init_register_timer_wakeup(sensores_handler);
+    err = init_register_timer_wakeup(sleep_timer_handler);
     if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error en init_register_timer_wakeup: %s", esp_err_to_name(err));
         return;
     }
 
+    err=power_manager_init();
+    if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
+    return;
+    }
+
+    err=comienza_reloj();
+    if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error en iniciar reloj: %s", esp_err_to_name(err));
+        return;
+    }
+
+
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
-
 }

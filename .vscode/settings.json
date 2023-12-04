@@ -21,7 +21,11 @@
     "ostream": "c",
     "sstream": "c",
     "streambuf": "c",
-    "*.inc": "c"
+    "*.inc": "c",
+    "condition_variable": "c",
+    "ctime": "c",
+    "mutex": "c",
+    "cjson.h": "c"
   },
   "idf.portWin": "COM5"
 }
