@@ -79,6 +79,7 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
             return ESTADO_THINGSBOARD_READY;
         
         case TRANS_THINGSBOARD_UNAVAILABLE:
+            ESP_LOGI(TAG, "ALV");
             esp_restart();
             break;
         default:

@@ -160,7 +160,7 @@ esp_err_t deep_sleep(){
 }
 
 esp_err_t comienza_reloj(){
-     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_2, 1 * 1000000));
+    //  ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_2, 1 * 1000000));
     return ESP_OK;
 }
 
