@@ -81,7 +81,7 @@ estado_t trans_estado_conectado(transicion_t trans) {
 }
 
 
-//TODOANGEL: REALIZAR UNA TRANSCICIAON A DESPIERTO PARA ELLO UN ESTADO
+//TODOANGEL: Se puede REALIZAR UNA TRANSCICIAON A DESPIERTO PARA ELLO UN ESTADO
 // estado_t trans_estado_hora_sincronizada(transicion_t trans) {
 
 //     switch (trans.tipo) {
@@ -117,7 +117,6 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
         // //data_sensores_t *lecturas = trans.dato;
         // ESP_ERROR_CHECK(deep_sleep());
         // return ESTADO_DORMIDO;
-            
         default:
             return ESTADO_CONECTADO;
     }

@@ -34,6 +34,7 @@ esp_err_t init_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
 void hora(void);
+int data_json ();
 
 
 #endif

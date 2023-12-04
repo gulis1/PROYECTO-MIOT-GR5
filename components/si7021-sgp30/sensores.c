@@ -33,10 +33,23 @@ static int conteo=0;
 //char buffer[80];
 
 
-
-static int lectura_sensores_callback(){
+char* data_sensores_to_json_string(data_sensores_t* info) {
 
     cJSON *root = cJSON_CreateObject();
+
+     /// la idea es devolver un objeto json 
+    cJSON_AddNumberToObject(root,"temperatura",info->temp_dato);
+    cJSON_AddNumberToObject(root,"eCO2",info->CO2_dato);
+    cJSON_AddNumberToObject(root,"TVOC",info->TVOC_dato);
+
+    char* json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    return json_string;
+}
+
+
+static void lectura_sensores_callback(){
 
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
@@ -50,18 +63,12 @@ static int lectura_sensores_callback(){
 
     void *dato_sensores =&DATA_SENSORES;
 
-    /// la idea es devolver un objeto json 
-    cJSON_AddNumberToObject(root,"temperatura",DATA_SENSORES.temp_dato);
-    cJSON_AddNumberToObject(root,"eCO2",main_sgp30_sensor.eCO2);
-    cJSON_AddNumberToObject(root,"TVOC",main_sgp30_sensor.TVOC);
-
     //Envio post
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root);
-
-    sprintf(info,"{TVOC: %ld, eCO2:%ld, temp:%f}",DATA_SENSORES.TVOC_dato,DATA_SENSORES.CO2_dato,DATA_SENSORES.temp_dato);
-
-    return info;
 }
+
+
+
     
 
 esp_err_t sensores_init(void *sensores_handler) {
@@ -107,7 +114,6 @@ esp_err_t sensores_init(void *sensores_handler) {
 void calibracion() {
 
     for (int i = 0; i < 14; i++) { 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         sgp30_IAQ_measure(&main_sgp30_sensor);
         ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
     }

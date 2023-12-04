@@ -22,7 +22,7 @@
 #include "sueno_profundo.h"
 #include "configuracion_hora.h"
 
-#define TIMER_WAKEUP_TIME_US    (2 * 1000 * 1000) //TODOANGEL: se puede poner en menuconfig seg*1000*1000 2=20 segundos
+//#define TIMER_WAKEUP_TIME_US    (2 * 1000 * 1000) //TODOANGEL: se puede poner en menuconfig seg*1000*1000 2=20 segundos
 #define HORA_INICIO  CONFIG_HORA_INICIO
 #define MINUTOS_INICIO CONFIG_MINUTO_INICIO
 #define SEGUNDOS_INICIO CONFIG_SEGUNDO_INICIO
