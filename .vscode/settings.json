@@ -8,7 +8,10 @@
     "esp_event.h": "c",
     "array": "c",
     "string": "c",
-    "string_view": "c"
+    "string_view": "c",
+    "provision.h": "c",
+    "freertos.h": "c",
+    "manager.h": "c"
   },
-  "idf.portWin": "COM5"
+  "idf.portWin": "COM4"
 }
