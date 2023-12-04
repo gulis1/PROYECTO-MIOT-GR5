@@ -21,6 +21,9 @@ static sgp30_dev_t main_sgp30_sensor;
 // crear la estatica de la estructura
 static data_sensores_t DATA_SENSORES;
 
+char info;
+
+
 
 
 //Declaramos la familia de eventos
@@ -31,7 +34,9 @@ static int conteo=0;
 
 
 
-static void lectura_sensores_callback(){
+static int lectura_sensores_callback(){
+
+    cJSON *root = cJSON_CreateObject();
 
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
@@ -45,8 +50,17 @@ static void lectura_sensores_callback(){
 
     void *dato_sensores =&DATA_SENSORES;
 
+    /// la idea es devolver un objeto json 
+    cJSON_AddNumberToObject(root,"temperatura",DATA_SENSORES.temp_dato);
+    cJSON_AddNumberToObject(root,"eCO2",main_sgp30_sensor.eCO2);
+    cJSON_AddNumberToObject(root,"TVOC",main_sgp30_sensor.TVOC);
+
     //Envio post
-    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY));
+    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root);
+
+    sprintf(info,"{TVOC: %ld, eCO2:%ld, temp:%f}",DATA_SENSORES.TVOC_dato,DATA_SENSORES.CO2_dato,DATA_SENSORES.temp_dato);
+
+    return info;
 }
     
 
@@ -139,3 +153,5 @@ esp_err_t sensores_stop(){
 //realizando el return del json
 
 //creacion de json
+
+
