@@ -114,7 +114,7 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             return ESTADO_CALIBRADO;
 
         default:
-            return ESTADO_MQTT_READY;
+            return ESTADO_CALIBRADO;
     }
 }
 
