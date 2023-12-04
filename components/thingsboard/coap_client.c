@@ -24,12 +24,12 @@
 #include <esp_log.h>
 #include <esp_event.h>
 #include <coap3/coap.h>
+#include <lwip/sockets.h>
 
 
 
 const static char *TAG = "CoAP_client";
 
-static int resp_wait = 1;
 static char *COAP_SERVER_URI = NULL;
 static coap_uri_t uri;
 

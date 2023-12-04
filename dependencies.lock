@@ -1,15 +1,15 @@
 dependencies:
-  espressif__coap:
-    component_hash: null
+  espressif/coap:
+    component_hash: 05f0a06edec6265ddaf075ccf4034b68a7109ab1159d3c7ea01908166a3f8708
     source:
-      path: /home/gulis/Desktop/PROYECTO-MIOT-GR5/components/espressif__coap
-      type: local
+      service_url: https://api.components.espressif.com/
+      type: service
     version: 4.3.4
   idf:
     component_hash: null
     source:
       type: idf
     version: 5.1.1
-manifest_hash: c1b08c33fe3c30c7ef29bf8a3cccd8127101dd191b8e8739cc712ebcae191a48
+manifest_hash: 93f0b994dd02b53e3e625ca4d9e2ec722b901d309190c1dbdcc8883eddfc2626
 target: esp32
 version: 1.0.0

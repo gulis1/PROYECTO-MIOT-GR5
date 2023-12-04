@@ -4,6 +4,7 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <cJSON.h>
+#include <lwip/sockets.h>
 #include <coap3/coap.h>
 
 #include "mqtt_api.h"

@@ -20,7 +20,8 @@
     "coap_option.h": "c",
     "coap_forward_decls.h": "c",
     "coap_async.h": "c",
-    "coap_block.h": "c"
+    "coap_block.h": "c",
+    "sockets_ext.h": "c"
   },
   "idf.portWin": "COM5"
 }
