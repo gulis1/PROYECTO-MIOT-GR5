@@ -13,4 +13,5 @@ esp_err_t mqtt_start();
 esp_err_t mqtt_stop();
 esp_err_t mqtt_send(char *topic, char *data, int qos);
 esp_err_t mqtt_subscribe(char *topic);
+esp_err_t mqtt_unsubscribe(char *topic);
 #endif

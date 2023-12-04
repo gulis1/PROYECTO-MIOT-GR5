@@ -1,8 +1,10 @@
 #include <esp_log.h>
 #include <esp_event.h>
+#include <esp_timer.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <cJSON.h>
+#include <coap3/coap.h>
 
 #include "mqtt_api.h"
 #include "coap_client.h"
@@ -10,22 +12,35 @@
 
 const char *TAG = "thingsboard";
 
-static char *DEVICE_TOKEN = "provision";
+static char *DEVICE_TOKEN = NULL;
 static nvs_handle_t nvshandle;
 
 ESP_EVENT_DEFINE_BASE(THINGSBOARD_EVENT);
 
+
+cJSON* generate_provision_json() {
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
+    cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
+    cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
+
+    return json;
+}
+
 #ifdef CONFIG_USE_MQTT
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-    ESP_LOGI(TAG, "EVEMTITTTTTTTTTTOO");
+
     switch (event_id) {
 
         case MQTT_EVENT_CONNECTED:
+
             ESP_LOGI(TAG, "Conectado al broker MQTT de Thingsboard.");
-            if (strcmp(DEVICE_TOKEN, "provision") == 0) {
+            if (DEVICE_TOKEN == NULL) {
                 // Si no estamos provisionados, nos suscribimos al topic.
                 ESP_LOGI(TAG, "Device token not found, provisioning via Thingsboard.");
                 ESP_ERROR_CHECK(mqtt_subscribe("/provision/response"));
+
+                vTaskDelay(2000 / portTICK_PERIOD_MS); // TODO: revisar esta chapuza.
 
                 ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
                 cJSON *json = cJSON_CreateObject();
@@ -46,7 +61,8 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             break;
         
         case MQTT_EVENT_SUBSCRIBED:
-            if (strcmp(DEVICE_TOKEN, "provision") == 0) {
+
+            if (DEVICE_TOKEN == NULL) {
                 ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
                 cJSON *json = cJSON_CreateObject();
                 cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
@@ -67,14 +83,36 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             break;
 
         case MQTT_EVENT_DATA:
+
             esp_mqtt_event_handle_t mqtt_event = event_data;
-            ESP_LOGI(TAG, "Received MQTT message on topic %s: %s", mqtt_event->topic, mqtt_event->data);
+            if (strncmp(mqtt_event->topic, "/provision/response", mqtt_event->topic_len) == 0) {
+                
+                // Se ha recibido una respuesta de provisionamiento.
+                cJSON *response = cJSON_ParseWithLength(mqtt_event->data, mqtt_event->data_len);
+                cJSON *token_object = cJSON_GetObjectItem(response, "credentialsValue");
+                if (token_object == NULL) {
+                    // Error en el provisionamiento.
+                    esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
+                    return;
+                }
+
+                char *token = cJSON_GetStringValue(token_object);
+                DEVICE_TOKEN = malloc(strlen(token) + 1);
+                strcpy(DEVICE_TOKEN, token);
+                ESP_LOGI(TAG, "Received Thingsboard device token: %s", DEVICE_TOKEN);
+
+                mqtt_unsubscribe("/provision/response");
+                esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+                cJSON_free(response);
+            }
+            
             break;
     }
 }
 #endif
 
 #ifdef CONFIG_USE_COAP
+
 static coap_response_t
 coap_handler(coap_session_t *session,
                 const coap_pdu_t *sent,
@@ -93,7 +131,6 @@ coap_handler(coap_session_t *session,
                 printf("Unexpected partial data received offset %u, length %u\n", offset, data_len);
             }
             printf("Received:\n%.*s\n", (int)data_len, data);
-            resp_wait = 0;
         }
         return COAP_RESPONSE_OK;
     }
@@ -106,7 +143,6 @@ coap_handler(coap_session_t *session,
         }
     }
     printf("\n");
-    resp_wait = 0;
     return COAP_RESPONSE_OK;
 }
 #endif
@@ -167,10 +203,18 @@ esp_err_t thingsboard_start() {
     }
 
     #if CONFIG_USE_MQTT
-    
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        // TODO
+        if (DEVICE_TOKEN == NULL) {
+            cJSON *provision_json = generate_provision_json();
+            char *provision_payload = cJSON_PrintUnformatted(provision_json);
+            err = coap_client_provision_send(provision_payload);
+            free(provision_json);
+            free(provision_payload);
+            return err;
+        }
+
+        else return ESP_OK;
     #else
         return ESP_FAIL;
     #endif

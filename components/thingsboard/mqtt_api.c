@@ -1,4 +1,5 @@
 #include <esp_event.h>
+#include <esp_timer.h>
 #include <esp_log.h>
 #include <mqtt_client.h>
 
@@ -57,4 +58,8 @@ esp_err_t mqtt_send(char *topic, char *data, int qos) {
 
 esp_err_t mqtt_subscribe(char *topic) {
     return esp_mqtt_client_subscribe(mqtt_client, topic, 1) != -1 ? ESP_OK : ESP_FAIL;
+}
+
+esp_err_t mqtt_unsubscribe(char *topic) {
+    return esp_mqtt_client_unsubscribe(mqtt_client, topic) != -1 ? ESP_OK : ESP_FAIL;
 }

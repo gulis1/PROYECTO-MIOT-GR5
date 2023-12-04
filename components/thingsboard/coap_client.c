@@ -31,10 +31,10 @@ const static char *TAG = "CoAP_client";
 
 static int resp_wait = 1;
 static char *COAP_SERVER_URI = NULL;
+static coap_uri_t uri;
+
 static coap_context_t *coap_ctx = NULL;
 static coap_session_t *coap_session = NULL;
-
-
 static coap_optlist_t *optlist_telemetry = NULL;
 
 static coap_address_t *coap_get_address(coap_uri_t *uri) {
@@ -94,17 +94,14 @@ static coap_address_t *coap_get_address(coap_uri_t *uri) {
 esp_err_t coap_client_init(void *message_handler, char *device_token) {
 
     coap_address_t *dst_addr;
-    static coap_uri_t uri;
 
-    
-    // TODO: hacer esto bien.
     COAP_SERVER_URI = malloc(256); 
     if (COAP_SERVER_URI == NULL) {
         ESP_LOGE(TAG, "Error en malloc para COAP_SERVER_URI.");
         return ESP_ERR_NO_MEM;
     }
-    sprintf(COAP_SERVER_URI, "coap://%s/api/v1/%s/telemetry", CONFIG_THINGSBOARD_URL, device_token);
-    ESP_LOGI(TAG, "COAP URL: %s", COAP_SERVER_URI);
+    sprintf(COAP_SERVER_URI, "coap://%s", CONFIG_THINGSBOARD_URL);
+
 
     /* Set up the CoAP context */
     coap_ctx = coap_new_context(NULL);
@@ -134,31 +131,6 @@ esp_err_t coap_client_init(void *message_handler, char *device_token) {
         ESP_LOGE(TAG, "coap_new_client_session() failed");
         return ESP_FAIL;
     }
-
-    u_char buf[4];
-    struct coap_optlist_t *opt_format_json = coap_new_optlist(COAP_OPTION_CONTENT_FORMAT, coap_encode_var_safe(buf, sizeof (buf), COAP_MEDIATYPE_APPLICATION_JSON), buf);
-    if (opt_format_json == NULL) {
-        ESP_LOGE(TAG, "Error en coap_new_optlist()");
-        return ESP_FAIL;
-    }
-    
-    optlist_telemetry = NULL;
-    if (coap_insert_optlist(&optlist_telemetry, opt_format_json) == 0) {
-        ESP_LOGE(TAG, "Error en coap_insert_optlist()");
-        return ESP_FAIL;
-    }
-
-    coap_optlist_t *opt_format_path = coap_new_optlist(COAP_OPTION_URI_PATH, uri.path.length, uri.path.s);
-    if (opt_format_path == NULL) {
-        ESP_LOGE(TAG, "Error en coap_new_optlist()");
-        return ESP_FAIL;
-    }
-
-    if (coap_insert_optlist(&optlist_telemetry, opt_format_path) == 0) {
-        ESP_LOGE(TAG, "Error en coap_insert_optlist()");
-        return ESP_FAIL;
-    }
-
 
     return ESP_OK;
 }
@@ -205,6 +177,98 @@ esp_err_t coap_client_send(char *content, coap_optlist_t **optlist) {
     return ESP_OK;
 }
 
-esp_err_t coap_client_telemetry_send(char *content) {
+esp_err_t coap_generate_telemetry_optlist(char *device_token) {
+
+    if (device_token == NULL) {
+        ESP_LOGE(TAG, "Cannot generate oplist for telemetry: device token is null");
+        return ESP_FAIL;
+    }
+
+    char uri_buf[128];
+    sprintf(uri_buf, "api/v1/%s/telemetry", device_token);
+    ESP_LOGI(TAG, "COAP telemetry URI: %s", uri_buf);
+
+    u_char buf[4];
+    struct coap_optlist_t *opt_format_json = coap_new_optlist(COAP_OPTION_CONTENT_FORMAT, coap_encode_var_safe(buf, sizeof (buf), COAP_MEDIATYPE_APPLICATION_JSON), buf);
+    if (opt_format_json == NULL) {
+        ESP_LOGE(TAG, "Error en coap_new_optlist()");
+        return ESP_FAIL;
+    }
+    
+    optlist_telemetry = NULL;
+    if (coap_insert_optlist(&optlist_telemetry, opt_format_json) == 0) {
+        ESP_LOGE(TAG, "Error en coap_insert_optlist()");
+        return ESP_FAIL;
+    }
+
+    coap_optlist_t *opt_format_path = coap_new_optlist(COAP_OPTION_URI_PATH, strlen(uri_buf), (u_char*) uri_buf);
+    if (opt_format_path == NULL) {
+        ESP_LOGE(TAG, "Error en coap_new_optlist()");
+        return ESP_FAIL;
+    }
+
+    if (coap_insert_optlist(&optlist_telemetry, opt_format_path) == 0) {
+        ESP_LOGE(TAG, "Error en coap_insert_optlist()");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t coap_client_telemetry_send(char *content, char* device_token) {
+
+    if (optlist_telemetry == NULL) {
+        ESP_LOGI(TAG, "Generating optlist for telemetry sending...");
+        esp_err_t err = coap_generate_telemetry_optlist(device_token);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to generate telemetry optlist: %s", esp_err_to_name(err));
+            return err;
+        }
+    }
+
     return coap_client_send(content, &optlist_telemetry);
+}
+
+esp_err_t coap_client_provision_send(char *content) {
+
+    size_t tokenlength;
+    unsigned char token[8];
+    coap_pdu_t *request = NULL;
+
+    request = coap_new_pdu(COAP_MESSAGE_CON, COAP_REQUEST_CODE_POST, coap_session);
+    if (!request) {
+        ESP_LOGE(TAG, "Error en coap_new_pdu()");
+        return ESP_FAIL;
+    }
+    
+    /* Add in an unique token */
+    coap_session_new_token(coap_session, &tokenlength, token);
+    if (coap_add_token(request, tokenlength, token) == 0) {
+        ESP_LOGE(TAG, "Error en coap_add_token()");
+        return ESP_FAIL;
+    }
+
+    char *provision_path = "api/v1/provision";
+    if (coap_add_option(request, COAP_OPTION_URI_PATH, strlen(provision_path), (u_char*) provision_path) == 0) {
+        ESP_LOGE(TAG, "Error en coap_add_option()");
+        return ESP_FAIL;
+    }
+
+
+    if (coap_add_data(request, strlen(content), (unsigned char*) content) == 0) {
+        ESP_LOGE(TAG, "Error en coap_add_data_large_request()");
+        return ESP_FAIL;
+    }
+
+    if (coap_send(coap_session, request) == COAP_INVALID_MID) {
+        ESP_LOGE(TAG, "Error en coap_send()");
+        return ESP_FAIL;
+    }
+    
+    if (coap_io_process(coap_ctx, COAP_IO_NO_WAIT) == -1) {
+        ESP_LOGE(TAG, "Error en coap_io_process");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
 }

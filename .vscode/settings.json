@@ -17,7 +17,10 @@
     "coap.h": "c",
     "coap_client.h": "c",
     "event_groups.h": "c",
-    "coap_option.h": "c"
+    "coap_option.h": "c",
+    "coap_forward_decls.h": "c",
+    "coap_async.h": "c",
+    "coap_block.h": "c"
   },
   "idf.portWin": "COM5"
 }
