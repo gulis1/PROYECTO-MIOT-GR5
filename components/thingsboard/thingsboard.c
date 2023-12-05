@@ -145,7 +145,7 @@ static coap_response_t coap_handler(coap_session_t *session,
                 esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
             }
 
-            printf("Received:\n%.*s\n", (int)data_len, data);
+            ESP_LOGI(TAG, "Received COAP message:\n%.*s\n", (int)data_len, data);
         }
         return COAP_RESPONSE_OK;
     }
