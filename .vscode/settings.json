@@ -11,7 +11,9 @@
     "string_view": "c",
     "provision.h": "c",
     "freertos.h": "c",
-    "manager.h": "c"
+    "manager.h": "c",
+    "event_groups.h": "c",
+    "scheme_ble.h": "c"
   },
   "idf.portWin": "COM4"
 }

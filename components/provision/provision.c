@@ -4,6 +4,7 @@
 #include <nvs_flash.h>
 #include <string.h>
 #include <esp_wifi.h>
+//#include <csjon.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -63,6 +64,32 @@ static const char sec2_verifier[] = {
     0xb3, 0xbe, 0x40, 0xc5, 0xc5, 0x32, 0x29, 0x3e, 0x71, 0x64, 0x9e, 0xde, 0x8c, 0xf6, 0x75, 0xa1,
     0xe6, 0xf6, 0x53, 0xc8, 0x31, 0xa8, 0x78, 0xde, 0x50, 0x40, 0xf7, 0x62, 0xde, 0x36, 0xb2, 0xba
 };
+
+static esp_err_t example_get_sec2_salt(const char **salt, uint16_t *salt_len) {
+#if CONFIG_EXAMPLE_PROV_SEC2_DEV_MODE
+    ESP_LOGI(TAG, "Development mode: using hard coded salt");
+    *salt = sec2_salt;
+    *salt_len = sizeof(sec2_salt);
+    return ESP_OK;
+#elif CONFIG_EXAMPLE_PROV_SEC2_PROD_MODE
+    ESP_LOGE(TAG, "Not implemented!");
+    return ESP_FAIL;
+#endif
+}
+
+static esp_err_t example_get_sec2_verifier(const char **verifier, uint16_t *verifier_len) {
+#if CONFIG_EXAMPLE_PROV_SEC2_DEV_MODE
+    ESP_LOGI(TAG, "Development mode: using hard coded verifier");
+    *verifier = sec2_verifier;
+    *verifier_len = sizeof(sec2_verifier);
+    return ESP_OK;
+#elif CONFIG_EXAMPLE_PROV_SEC2_PROD_MODE
+    /* This code needs to be updated with appropriate implementation to provide verifier */
+    ESP_LOGE(TAG, "Not implemented!");
+    return ESP_FAIL;
+#endif
+}
+#endif
 #endif
 
 #define PROV_QR_VERSION         "v1"
@@ -74,6 +101,16 @@ static const char sec2_verifier[] = {
  * The data format can be chosen by applications. Here, we are using plain ascii text.
  * Applications can choose to use other formats like protobuf, JSON, XML, etc.
  */
+
+static void get_device_service_name(char *service_name, size_t max)
+{
+    uint8_t eth_mac[6];
+    const char *ssid_prefix = "PROV_";
+    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+    snprintf(service_name, max, "%s%02X%02X%02X",
+             ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
+}
+
 static void event_handler(void* arg, esp_event_base_t event_base,
                           int32_t event_id, void* event_data)
 {
@@ -146,7 +183,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
         /* Signal main application to continue execution */
-        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
+        //xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
 #ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
     } else if (event_base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
         switch (event_id) {
@@ -218,7 +255,7 @@ void start_provisioning()
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
 #ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
     ESP_ERROR_CHECK(esp_event_handler_register(PROTOCOMM_TRANSPORT_BLE_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
-
+#endif
     /* Initialize Wi-Fi including netif with default config */
 #ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP
     esp_netif_create_default_wifi_ap();
@@ -400,7 +437,7 @@ void start_provisioning()
     }
 
     /* Wait for Wi-Fi connection */
-    xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
+    //xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
 
     /* Start main application now */
 #if CONFIG_EXAMPLE_REPROVISIONING
