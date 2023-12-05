@@ -8,6 +8,7 @@
 const static char *TAG = "MQTT";
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
+static void *mqtt_event_handler = NULL;
 
 esp_err_t mqtt_init(void *event_handler, char *device_token) {
 
@@ -21,7 +22,7 @@ esp_err_t mqtt_init(void *event_handler, char *device_token) {
 
     esp_mqtt_client_config_t mqtt_config = {
         .broker.address.uri = mqtt_url,
-        .credentials.username = device_token,
+        .credentials.username = device_token != NULL ? device_token : "provision",
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
@@ -31,12 +32,32 @@ esp_err_t mqtt_init(void *event_handler, char *device_token) {
     }
 
     // Registramos los eventos de base MQTT_EVENTS al handler.
-    err = esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, event_handler, mqtt_client);
+    err = esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, event_handler, NULL);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_mqtt_client_register_event: %s", esp_err_to_name(err));
         return err;
     }
+    mqtt_event_handler = event_handler;
+    return ESP_OK;
+}
+
+esp_err_t mqtt_deinit() {
+
+    esp_err_t err;
+    err = esp_mqtt_client_unregister_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en esp_mqtt_client_unregister_event: %s", esp_err_to_name(err));
+        return err;
+    }
+    mqtt_event_handler = NULL;
     
+
+    err = esp_mqtt_client_destroy(mqtt_client);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en esp_mqtt_client_destroy: %s", esp_err_to_name(err));
+        return err;
+    }
+
     return ESP_OK;
 }
 
