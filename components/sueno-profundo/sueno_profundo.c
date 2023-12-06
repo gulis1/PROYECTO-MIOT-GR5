@@ -176,11 +176,11 @@ esp_err_t power_manager_init(){
         .light_sleep_enable=true
     };
 
-    esp_err_t ret = esp_pm_configure(&power_config);
-    if (ret != ESP_OK) {
-        ESP_LOGE("Power Manager", "init power manager falló: %s", esp_err_to_name(ret));
-        return ret;
-    }
+    // esp_err_t ret = esp_pm_configure(&power_config);
+    // if (ret != ESP_OK) {
+    //     ESP_LOGE("Power Manager", "init power manager falló: %s", esp_err_to_name(ret));
+    //     return ret;
+    // }
 
     ESP_LOGI("Power Manager", "Init correcto");
     return ESP_OK;

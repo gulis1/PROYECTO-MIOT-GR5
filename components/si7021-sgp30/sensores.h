@@ -17,8 +17,7 @@
 
 enum{
     CALIBRACION_REALIZADA,
-    SENSORES_ENVIAN_DATO,
-    PASAR_A_DORMIR_2,
+    SENSORES_ENVIAN_DATO
 };
 
 ESP_EVENT_DECLARE_BASE(SENSORES_EVENT);
@@ -30,7 +29,7 @@ typedef struct {
 } data_sensores_t;
 
 esp_err_t sensores_init(void *sensores_handler);
-esp_err_t init_calibracion();
+esp_err_t start_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
 void hora(void);

@@ -16,68 +16,15 @@
 
 #include <esp_event.h>
 #include <esp_log.h>
-#include <esp_netif.h>
-#include <time.h>
-#include <sys/time.h>
-#include <esp_attr.h>
-#include <esp_sleep.h>
-#include <esp_sntp.h>
 
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-#include "thingsboard.h"
-
-/////////////////
-  
-  
-  
-#include <esp_sntp.h>
-#include <esp_netif.h>
-
-#include "esp_check.h"
-
-
-#include <time.h>
-#include <sys/time.h>
-#include "esp_attr.h"
-
-#include "esp_sntp.h"
-#include "configuracion_hora.h"
+#include "thingsboard.h" 
 #include "sueno_profundo.h"
+#include "configuracion_hora.h"
 
-
-////////////////////
-#include <stdio.h>
-#include <string.h>
-#include "esp_system.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "esp_event.h"
-#include "esp_timer.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/queue.h>
-
-#include <i2c_config.h>
-
-#include "esp_pm.h"
-
-
-#include <time.h>
-#include <sys/time.h>
-#include "sdkconfig.h"
-
-#include "esp_sleep.h"
-#include "driver/rtc_io.h"
-#include "nvs_flash.h"
-#include "nvs.h"
-#include "driver/uart.h"
-#include "esp_timer.h"
-
-//////////////
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
