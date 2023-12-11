@@ -519,5 +519,7 @@ esp_err_t init_provision(void *event_handler) {
     void *data = &PROVISION_INFO;
     esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
 
+
+    nvs_close(nvs_handle);
     return ESP_OK;    
 }

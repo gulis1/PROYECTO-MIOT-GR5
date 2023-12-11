@@ -8,43 +8,27 @@
     valor de tipo "transicion_t", cuyo campo "tipo" se
     establecerá en función del tipo de evento.
 
-    La estructura "transicion_t" contiene un campo "dato" 
+    La estructura "transicion_t" contiene un campo "dato"
     que puede usarse para poner en la cola información
     adicional sobre la transición (por ejemplo, el valor
     de la lectura de un sensor).
 */
 
-
 #include <esp_event.h>
 #include <esp_log.h>
-#include <mqtt_client.h>
 
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
+#include "sensores.h"
+#include "thingsboard.h" 
+#include "sueno_profundo.h"
+#include "configuracion_hora.h"
+
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
 
-
-void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-
-    ESP_LOGI("MQTT_HANDLER", "Evento de MQTT recibido.");
-
-    transicion_t trans;
-    switch (event_id) {
-
-        case MQTT_EVENT_CONNECTED:
-            trans.tipo = TRANS_MQTT_CONNECTED;
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            break;
-
-        case MQTT_EVENT_DISCONNECTED:
-            trans.tipo = TRANS_MQTT_DISCONNECTED;
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            break;
-    }
-}
 
 void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -52,29 +36,29 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     transicion_t trans;
     if (event_base == WIFI_EVENT) {
         TAG = "WIFI_HANDLER";
-         switch (event_id) {
+        switch (event_id) {
 
-        case WIFI_EVENT_STA_CONNECTED:
-            ESP_LOGI(TAG, "IP ACQUIRED\n");
-            break;
+            case WIFI_EVENT_STA_CONNECTED:
+                ESP_LOGI(TAG, "IP ACQUIRED\n");
+                break;
 
-        default:
-            ESP_LOGE("WIFI_HANDLER", "Evento desconocido.");
-        }
+            default:
+                ESP_LOGE("WIFI_HANDLER", "Evento desconocido.");
+            }
     } 
     
     else if (event_base == IP_EVENT) {
         TAG = "IP_HANDLER";
         switch (event_id) {
+            
+            case IP_EVENT_STA_GOT_IP:
+                trans.tipo=TRANS_WIFI_READY;
+                xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+                ESP_LOGI(TAG, "IP ACQUIRED\n");
+                break;
 
-        case IP_EVENT_STA_GOT_IP:
-            trans.tipo=TRANS_WIFI_READY;
-            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            ESP_LOGI(TAG, "IP ACQUIRED\n");
-            break;
-
-        default:
-            ESP_LOGE("IP_HANDLER", "Evento desconocido.");
+            default:
+                ESP_LOGE("IP_HANDLER", "Evento desconocido.");
         }
     }
 
@@ -89,13 +73,13 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 
         case PROV_DONE:
 
-            prov_info_t *provinfo = *((prov_info_t**)event_data);
+            prov_info_t *provinfo = *((prov_info_t **)event_data);
             trans.tipo = TRANS_PROVISION;
             trans.dato = provinfo;
 
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
-        
+
         case PROV_ERROR:
             // TODO
             break;
@@ -104,3 +88,88 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
     }
 }
+
+void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    ESP_LOGI("THINGSBOARD_HANDLER", "Evento de thingsboard recibido.");
+
+    transicion_t trans;
+    switch (event_id) {
+
+        case THINGSBOARD_EVENT_READY:
+
+            trans.tipo = TRANS_THINGSBOARD_READY;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        case THINGSBOARD_EVENT_UNAVAILABLE:
+            trans.tipo = TRANS_THINGSBOARD_UNAVAILABLE;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        default:
+            ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
+    }
+}
+
+/////////////////////////////////////////////
+// este es el handler de los sensores
+void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+
+    transicion_t trans;
+    switch (event_id) {
+        case SENSORES_ENVIAN_DATO:
+            data_sensores_t *info_data_sensores_a_pasar = *((data_sensores_t**)event_data);
+            trans.tipo = TRANS_LECTURA_SENSORES;
+            trans.dato = info_data_sensores_a_pasar;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        case CALIBRACION_REALIZADA:
+            trans.tipo = TRANS_CALIBRACION_REALIZADA;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+        // case PASAR_A_DORMIR_2:
+        //     trans.tipo = TRANS_DORMIR;
+        //     ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR_2");
+        //     xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+        //     break;
+
+        default:
+            ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
+    }
+}
+
+
+//Este es el handler de la Hora
+void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+
+        transicion_t trans;
+        switch (event_id) {
+        case HORA_CONFIGURADA:
+            trans.tipo = TRANS_SINCRONIZAR;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+        default:
+            ESP_LOGI("HORA_HANDLER", "Evento desconocido.");
+
+    }
+}
+
+
+//este es el halder del deep_sleep
+void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    transicion_t trans;
+        switch (event_id) {
+        case PASAR_A_DORMIR:
+            trans.tipo = TRANS_DORMIR;
+            ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR");
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+        default:
+            ESP_LOGI("HORA_HANDLER", "Evento desconocido.");
+    }
+}
+
+
+
