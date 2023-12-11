@@ -1,0 +1,40 @@
+menu "Thingsboard configuration"
+
+    config THINGSBOARD_URL
+        string "Thingsboard url"
+        help
+            URL of Thingsboard instance.
+    
+    config THINGSBOARD_DEVICE_NAME
+        string "Device name para Thingsboard"
+        help
+            Temporal, hasta que tengamos el provisionamiento.
+    
+    config THINGSBOARD_PROVISION_DEVICE_KEY
+        string "Device key for Thingsboard provisioning"
+        help
+            Temporal, hasta que tengamos el provisionamiento.
+
+    config THINGSBOARD_PROVISION_DEVICE_SECRET
+        string "Device secret for Thingsboard provisioning"
+        help
+            Temporal, hasta que tengamos el provisionamiento
+
+    # config THINGSBOARD_DEVICE_TOKEN
+    #     string "Thingsboard device token"
+    #     help
+    #         Temporal, hasta que tengamos el provisionamiento.
+
+    choice Protocolo
+        bool "Protocolo de comunicación"
+        default USE_COAP
+
+    config USE_MQTT
+        bool "mqtt"
+
+    config USE_COAP
+        bool "coap"
+
+    endchoice
+
+endmenu

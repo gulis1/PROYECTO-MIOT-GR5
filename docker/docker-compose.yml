@@ -1,8 +1,19 @@
-name: pruebas
+name: my_thingsboard
 services:
-    eclipse-mosquitto:
-        volumes:
-            - ./mosquitto_config:/mosquitto/config
+    tb-postgres:
+        stdin_open: true
+        tty: true
         ports:
+            - 9090:9090
             - 1883:1883
-        image: eclipse-mosquitto
+            - 7070:7070
+            - 5683-5688:5683-5688/udp
+        volumes:
+            - thingsboard_data:/data
+            - thingsboard_logs:/var/log/thingsboard
+        container_name: thingsboard
+        restart: always
+        image: thingsboard/tb-postgres
+volumes:
+    thingsboard_data:
+    thingsboard_logs:
