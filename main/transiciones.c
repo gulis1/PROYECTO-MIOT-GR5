@@ -20,6 +20,7 @@
 #include "configuracion_hora.h"
 #include "sueno_profundo.h"
 #include "thingsboard.h"
+#include "bluetooth.h"
 
 const static char *TAG = "transiciones.c";
 
@@ -92,9 +93,10 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
     switch (trans.tipo) {
 
-        case TRANS_CALIBRACION_REALIZADA || TRANS_LECTURA_AFORO:
+        case TRANS_CALIBRACION_REALIZADA:
             //TRANS_LECTURA_AFORO:
             //LECTURA DE AFORO IDEA ES UN TIMER QUE DE EL AFORO PUEDE SER EN PARELELO O IGUAL QUE SENSORES ESTAR
+            ESP_ERROR_CHECK(estimacion_de_aforo()); ///PRUEBAS AQUI 
             ESP_ERROR_CHECK(sensores_start());
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;

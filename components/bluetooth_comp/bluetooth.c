@@ -31,6 +31,11 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include <math.h>
+#include <esp_event.h>
+#include <esp_timer.h>
+
+#include "main.h"
+#include "bluetooth.h"
 
 #define GATTC_TAG "GATTC_DEMO"
 #define REMOTE_SERVICE_UUID        0x00FF
@@ -47,6 +52,11 @@ static bool connect    = false;
 static bool get_server = false;
 static esp_gattc_char_elem_t *char_elem_result   = NULL;
 static esp_gattc_descr_elem_t *descr_elem_result = NULL;
+
+//Declaramos la familia de eventos
+ESP_EVENT_DEFINE_BASE(BLUETOOTH_CONFIG_EVENT);
+
+static esp_timer_handle_t periodic_timer_bluetooth;
 
 /* Declare static functions */
 static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param);
@@ -482,7 +492,31 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
     } while (0);
 }
 
-esp_err_t bluetooth_init() //void *bluetooth_handler
+esp_err_t callback_bluetooth(){
+    
+    esp_err_t err;
+    err = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
+    if (err!=ESP_OK){
+        ESP_LOGE(GATTC_TAG, "%s gattc app register failed, error code = %x\n", __func__, err);
+        return err;
+    }
+    esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
+    if (local_mtu_ret!=ESP_OK){
+        ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
+        return err;
+    }
+
+    //event_post
+    ESP_ERROR_CHECK(esp_event_post(BLUETOOTH_CONFIG_EVENT,ESTIMACION_AFORO, NULL, sizeof(NULL), portMAX_DELAY));
+    vTaskDelete(NULL);
+
+    return ESP_OK;
+    
+}
+
+
+
+esp_err_t bluetooth_init(void *bluetooth_handler) //void *bluetooth_handler
 {
     // // Initialize NVS.
     // esp_err_t ret = nvs_flash_init();
@@ -495,6 +529,7 @@ esp_err_t bluetooth_init() //void *bluetooth_handler
     //TODO: COLOCAR BIEN LOS MENSAJES PARA SABER DONDE FALLA
 
     esp_err_t err;
+    ESP_LOGI(GATTC_TAG, "Init Bluetooth");
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
@@ -539,23 +574,32 @@ esp_err_t bluetooth_init() //void *bluetooth_handler
         return err;
     }
 
+
+    const esp_timer_create_args_t periodic_timer_args = {
+        .callback = callback_bluetooth,
+        /* name is optional, but may help identify the timer when debugging */
+        .name = "bluetooth callback"
+    };
+
+    err = esp_timer_create(&periodic_timer_args, &periodic_timer_bluetooth);
+    if (err!=ESP_OK){
+        ESP_LOGE(GATTC_TAG,"Error en esp_timer_create: %s",esp_err_to_name(err));
+        return err;
+    }
+
+    //Crear los eventos
+    err = esp_event_handler_register(BLUETOOTH_CONFIG_EVENT, ESP_EVENT_ANY_ID, bluetooth_handler, NULL);
+    if (err!=ESP_OK){
+        ESP_LOGE(GATTC_TAG,"Error en esp_event_handler_register: %s",esp_err_to_name(err));
+        return err;
+    }
+
    return ESP_OK;
 
 }
 
 
-esp_err_t bluetooth_escaneo(){
-    esp_err_t err;
-    err = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
-    if (err!=ESP_OK){
-        ESP_LOGE(GATTC_TAG, "%s gattc app register failed, error code = %x\n", __func__, err);
-        return err;
-    }
-    esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
-    if (local_mtu_ret!=ESP_OK){
-        ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
-        return err;
-    }
-    
+esp_err_t estimacion_de_aforo(){
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth, (CONFIG_PERIODO_TEMP+1) * 1000000));
     return ESP_OK;
 }

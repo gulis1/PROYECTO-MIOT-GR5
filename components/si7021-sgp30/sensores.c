@@ -6,7 +6,7 @@
 #include <i2c_config.h>
 #include <driver/i2c.h>
 #include <esp_event.h>
-#include "esp_timer.h"
+#include <esp_timer.h>
 #include "main.h"
 #include "cJSON.h"
 //#include "configuracion_hora.h"
@@ -25,7 +25,7 @@ static data_sensores_t DATA_SENSORES;
 
 
 //Declaramos la familia de eventos
-ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
+ESP_EVENT_DEFINE_BASE(SENSORES_EVENT);
 
 //static int conteo=0;
 

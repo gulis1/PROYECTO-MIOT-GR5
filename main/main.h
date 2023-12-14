@@ -74,6 +74,7 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 
 // Transiciones

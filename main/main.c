@@ -122,17 +122,25 @@ void app_main(void) {
         return;
     }
 
-    err = power_manager_init();
-    if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
-    return;
-    }
+    // err = power_manager_init();
+    // if (err != ESP_OK) {
+    // ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
+    // return;
+    // }
 
     err = comienza_reloj();
     if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error en iniciar reloj: %s", esp_err_to_name(err));
         return;
     }
+
+    err= bluetooth_init(bluetooth_handler);
+    if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Error en inicializar Bluetooth: %s", esp_err_to_name(err));
+        return;
+    }
+
+    
 
 
     TaskHandle_t task_handle;
