@@ -10,19 +10,23 @@ const static char *TAG = "MQTT";
 static esp_mqtt_client_handle_t mqtt_client = NULL;
 static void *mqtt_event_handler = NULL;
 
-esp_err_t mqtt_init(void *event_handler, char *device_token) {
+esp_err_t mqtt_init(void *event_handler, char *device_token, char *server_cert) {
 
     esp_err_t err;
     char mqtt_url[256];
 
-    if (snprintf(mqtt_url, sizeof(mqtt_url), "mqtt://%s", CONFIG_THINGSBOARD_URL) > sizeof(mqtt_url)) {
+    if (snprintf(mqtt_url, sizeof(mqtt_url), "mqtts://%s", CONFIG_THINGSBOARD_URL) > sizeof(mqtt_url)) {
         ESP_LOGE(TAG, "mqtt broker URL too large");
         return ESP_ERR_NO_MEM;
     }
 
     esp_mqtt_client_config_t mqtt_config = {
-        .broker.address.uri = mqtt_url,
+        .broker = {
+            .address.uri = mqtt_url,
+            .verification.certificate = server_cert
+        },
         .credentials.username = device_token != NULL ? device_token : "provision",
+        
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);

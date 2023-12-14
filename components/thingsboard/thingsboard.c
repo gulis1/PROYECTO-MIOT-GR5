@@ -18,6 +18,9 @@ static nvs_handle_t nvshandle;
 
 ESP_EVENT_DEFINE_BASE(THINGSBOARD_EVENT);
 
+extern const uint8_t cert_pem_start[] asm("_binary_cert_pem_start");
+extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
+
 
 cJSON* generate_provision_json() {
     cJSON *json = cJSON_CreateObject();
@@ -55,7 +58,7 @@ void restart_mqtt_client() {
     ESP_LOGI(TAG, "Reiniciando cliente MQTT...");
     vTaskDelay(2000 / portMAX_DELAY);
     ESP_ERROR_CHECK(mqtt_deinit());
-    ESP_ERROR_CHECK(mqtt_init(mqtt_handler, DEVICE_TOKEN));
+    ESP_ERROR_CHECK(mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start));
     ESP_ERROR_CHECK(mqtt_start());
     vTaskDelete(NULL);
 }
@@ -178,7 +181,8 @@ esp_err_t thingsboard_init(void *handler) {
     #elif CONFIG_USE_MQTT
         // Iniciación MQTT. Se le pasa el handler de los eventos
         // MQTT para que se registre. 
-        err = mqtt_init(mqtt_handler, DEVICE_TOKEN);
+        ESP_LOGI(TAG, "Certificado: \n%s", cert_pem_start);
+        err = mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
             return err;
