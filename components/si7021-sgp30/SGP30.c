@@ -11,6 +11,8 @@
 #include "driver/i2c.h"
 #include "sdkconfig.h"
 
+
+
 #include "SGP30.h"
 
 
@@ -26,44 +28,10 @@
 #define ACK_VAL 0x0                             /*!< I2C ack value */
 #define NACK_VAL 0x1                            /*!< I2C nack value */
 
-
-// menu "SGP30 I2C Peripheral Configuration"
-
-//     menu "I2C Master"
-//         config I2C_MASTER_SCL
-//             int "SCL GPIO Num"
-//             default 22
-//             help
-//                 GPIO number for I2C Master clock line.
-
-//         config I2C_MASTER_SDA
-//             int "SDA GPIO Num"
-//             default 21
-//             help
-//                 GPIO number for I2C Master data line.
-
-//         config I2C_MASTER_PORT_NUM
-//             int "Port Number"
-//             default 0
-//             help
-//                 Port number for I2C Master device.
-
-//         config I2C_MASTER_FREQUENCY
-//             int "Master Frequency"
-//             default 100000
-//             help
-//                 I2C Speed of Master device.
-//     endmenu
-
-// endmenu
-
-
-
-
 #define I2C_MASTER_SCL_IO 22               /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO 21               /*!< gpio number for I2C master data  */
 #define I2C_MASTER_NUM I2C_NUMBER(0) /*!< I2C port number for master dev */
-#define I2C_MASTER_FREQ_HZ 100000        /*!< I2C master clock frequency */
+#define I2C_MASTER_FREQ_HZ 10000  //400000//     /*!< I2C master clock frequency */
 #define I2C_MASTER_TX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 
@@ -80,6 +48,7 @@ esp_err_t i2c_master_driver_initialize(void) {
     conf.scl_io_num = I2C_MASTER_SCL_IO;
     conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
     conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
+    conf.clk_flags = 0;
     
     i2c_param_config(i2c_master_port, &conf);
     return i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
@@ -419,41 +388,41 @@ static uint8_t sgp30_calculate_CRC(uint8_t *data, uint8_t len) {
     }
     return crc;
 }
-// void tarea_sgp30(void *arg) {
-//     ESP_LOGI(TAG, "SGP30 main task initializing...");
+// // void tarea_sgp30(void *arg) {
+// //     ESP_LOGI(TAG, "SGP30 main task initializing...");
 
-//     sgp30_dev_t main_sgp30_sensor;
+// //     sgp30_dev_t main_sgp30_sensor;
 
-//     i2c_master_driver_initialize();
+// //     i2c_master_driver_initialize();
 
-//     sgp30_init(&main_sgp30_sensor, (sgp30_read_fptr_t)main_i2c_read, (sgp30_write_fptr_t)main_i2c_write);
+// //     sgp30_init(&main_sgp30_sensor, (sgp30_read_fptr_t)main_i2c_read, (sgp30_write_fptr_t)main_i2c_write);
 
-//     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing
-//     for (int i = 0; i < 14; i++) {
-//         vTaskDelay(1000 / portTICK_PERIOD_MS);
-//         sgp30_IAQ_measure(&main_sgp30_sensor);
-//         ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
-//     }
+// //     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing
+// //     for (int i = 0; i < 14; i++) {
+// //         vTaskDelay(1000 / portTICK_PERIOD_MS);
+// //         sgp30_IAQ_measure(&main_sgp30_sensor);
+// //         ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
+// //     }
 
-//     // Read initial baselines 
-//     uint16_t eco2_baseline, tvoc_baseline;
-//     sgp30_get_IAQ_baseline(&main_sgp30_sensor, &eco2_baseline, &tvoc_baseline);
-//     ESP_LOGI(TAG, "BASELINES - TVOC: %d,  eCO2: %d",  tvoc_baseline, eco2_baseline);
+// //     // Read initial baselines 
+// //     uint16_t eco2_baseline, tvoc_baseline;
+// //     sgp30_get_IAQ_baseline(&main_sgp30_sensor, &eco2_baseline, &tvoc_baseline);
+// //     ESP_LOGI(TAG, "BASELINES - TVOC: %d,  eCO2: %d",  tvoc_baseline, eco2_baseline);
 
 
-//     ESP_LOGI(TAG, "SGP30 main task is running...");
-//     while(1) {
-//         vTaskDelay(1000 / portTICK_PERIOD_MS);
-//         sgp30_IAQ_measure(&main_sgp30_sensor);
+// //     ESP_LOGI(TAG, "SGP30 main task is running...");
+// //     while(1) {
+// //         vTaskDelay(1000 / portTICK_PERIOD_MS);
+// //         sgp30_IAQ_measure(&main_sgp30_sensor);
 
-//         ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
-//     }
-// }
+// //         ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
+// //     }
+// // }
 
-// void read_sgp30(void) {
-//     // esp_log_level_set("*", ESP_LOG_VERBOSE);
-//     esp_log_level_set("SGP30-LIB", ESP_LOG_VERBOSE);
+// // void read_sgp30(void) {
+// //     // esp_log_level_set("*", ESP_LOG_VERBOSE);
+// //     esp_log_level_set("SGP30-LIB", ESP_LOG_VERBOSE);
     
-//     // Creation of main task
-//     xTaskCreate(tarea_sgp30, "sgp30_main_test_task", 1024 * 2, (void *)0, 10, NULL);
-// }
+// //     // Creation of main task
+// //     xTaskCreate(tarea_sgp30, "sgp30_main_test_task", 1024 * 2, (void *)0, 10, NULL);
+// // }

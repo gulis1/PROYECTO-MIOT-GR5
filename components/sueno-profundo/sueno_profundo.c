@@ -111,7 +111,7 @@ void hora(void){
             deep_sleep();
         }
         
-    
+        //TODO se puede poner deepsleep:
     }
     vTaskDelay(500 / portTICK_PERIOD_MS); //bloquea la tarea por menos de un segundo para intentar enentrear en suño se puede que juso antes del tiempo de mientreo, sacando un porcentaje o similar 
 

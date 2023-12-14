@@ -92,7 +92,9 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
     switch (trans.tipo) {
 
-        case TRANS_CALIBRACION_REALIZADA:
+        case TRANS_CALIBRACION_REALIZADA || TRANS_LECTURA_AFORO:
+            //TRANS_LECTURA_AFORO:
+            //LECTURA DE AFORO IDEA ES UN TIMER QUE DE EL AFORO PUEDE SER EN PARELELO O IGUAL QUE SENSORES ESTAR
             ESP_ERROR_CHECK(sensores_start());
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;
@@ -107,6 +109,8 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
+
+
             char json_buffer[128];
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);

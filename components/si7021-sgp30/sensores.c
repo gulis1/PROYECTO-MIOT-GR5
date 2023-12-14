@@ -21,16 +21,13 @@ static sgp30_dev_t main_sgp30_sensor;
 // crear la estatica de la estructura
 static data_sensores_t DATA_SENSORES;
 
-char info;
-
-
+//char info;
 
 
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
 
-static int conteo=0;
-//char buffer[80];
+//static int conteo=0;
 
 
 char* data_sensores_to_json_string(data_sensores_t* info) {
@@ -76,13 +73,14 @@ esp_err_t sensores_init(void *sensores_handler) {
     esp_err_t err;
 
     ESP_LOGI(TAG, "SGP30 main task initializing...");
-    //i2c_master_init_sgp30();
+   //i2c_master_init_sgp30();
 
     err = i2c_master_driver_initialize();
     if (err!=ESP_OK){
         ESP_LOGE(TAG,"Error i2c_master_driver_initialize(): %s",esp_err_to_name(err));
         return err;
     }
+    
     sgp30_init(&main_sgp30_sensor, (sgp30_read_fptr_t)main_i2c_read, (sgp30_write_fptr_t)main_i2c_write);
 
 
@@ -104,7 +102,6 @@ esp_err_t sensores_init(void *sensores_handler) {
         return err;
     }
 
-    //tarea de calibracion 
 
     return ESP_OK;
 }
@@ -134,11 +131,9 @@ void calibracion() {
 }
 
 
-
 esp_err_t init_calibracion(){
-     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaraciom 
-    xTaskCreate(calibracion, "task calibracion", 4096, NULL, 5, NULL);
-
+     // El SGP30 inicializa haciendo un envio de TVOC =400 14 veces 
+    xTaskCreate(calibracion, "task calibracion", 1024, NULL, 5, NULL); //4096
     return ESP_OK;
 }
 

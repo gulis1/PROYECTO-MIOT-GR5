@@ -47,7 +47,10 @@ typedef enum {
     TRANS_LECTURA_SENSORES,
 
     //transcicion para domir
-    TRANS_DORMIR
+    TRANS_DORMIR,
+
+    //transcicion para estimar aforo
+    TRANS_LECTURA_AFORO //creo que no sirve 
 
 } tipo_transicion_t;
 

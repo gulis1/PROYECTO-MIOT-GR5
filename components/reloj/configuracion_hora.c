@@ -1,12 +1,12 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
-#include "esp_system.h"
-#include "esp_event.h"
-#include "esp_log.h"
-#include "esp_attr.h"
-#include "esp_sleep.h"
-#include "nvs_flash.h"
+#include <esp_system.h>
+#include <esp_event.h>
+#include <esp_log.h>
+#include <esp_attr.h>
+#include <esp_sleep.h>
+#include <nvs_flash.h>
 //#include "protocol_examples_common.h"
 #include <esp_netif_sntp.h>
 #include <lwip/ip_addr.h>
@@ -62,11 +62,11 @@ void sincronizacion_hora(){
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
-    // Is time set? If not, tm_year will be (1970 - 1900).
+    //si la hora no esta seteada la obtiene
     if (timeinfo.tm_year < (2016 - 1900)) {
         ESP_LOGI(TAG, "El tiempo no este configurado aun. Obteniendo el tiempo protocol SNTP.");
         obtain_time();
-        // update 'now' variable with current time
+        //actualizacion de now con la hora actual
         time(&now);
     }
 
