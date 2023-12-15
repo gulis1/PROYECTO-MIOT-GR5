@@ -1,0 +1,41 @@
+
+menu "Sueño profundo"
+
+    config HORA_INICIO
+        int "hora inicio"
+        default 8
+        help 
+            Ingrese hora en la que comenzara el dispositivo a funcionar
+    
+    config MINUTO_INICIO
+        int "minuto inicio"
+        default 0
+        help
+            Ingrese minuto en la que comenzara el dispositivo a funcionar
+
+    config SEGUNDO_INICIO
+        int "segundo inicio"
+        default 0
+        help
+            Ingrese SEGUNDO en la que comenzara el dispositivo a funcionar
+
+
+
+    config HORA_FINAL
+        int "hora final"
+        default 22
+        help 
+            Ingrese hora en la que terminara el dispositivo de funcionar
+    
+    config MINUTO_FINAL
+        int "minuto final"
+        default 0
+        help
+            Ingrese minuto en la que terminara el dispositivo de funcionar
+
+    config SEGUNDO_FINAL
+        int "segundo final"
+        default 0
+        help
+            Ingrese SEGUNDO en la que terminara el dispositivo de funcionar
+endmenu
