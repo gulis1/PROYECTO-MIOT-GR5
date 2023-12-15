@@ -155,7 +155,7 @@ void entrar_deep_sleep(){
 }
 
 esp_err_t deep_sleep(){
-     xTaskCreate(entrar_deep_sleep, "entrar_deep_sleep task", 4096, NULL, 5, NULL);
+     xTaskCreate(entrar_deep_sleep, "entrar_deep_sleep task", 1024, NULL, 5, NULL);
     return ESP_OK;
 }
 

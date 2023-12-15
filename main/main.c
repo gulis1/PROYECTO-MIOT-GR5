@@ -12,6 +12,7 @@
 #include "configuracion_hora.h"
 #include "sueno_profundo.h"
 #include "thingsboard.h"
+#include "bluetooth.h"
 
 const static char* TAG = "main.c";
 
