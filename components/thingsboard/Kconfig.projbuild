@@ -5,11 +5,6 @@ menu "Thingsboard configuration"
         help
             URL of Thingsboard instance.
     
-    config THINGSBOARD_DEVICE_NAME
-        string "Device name para Thingsboard"
-        help
-            Temporal, hasta que tengamos el provisionamiento.
-    
     config THINGSBOARD_PROVISION_DEVICE_KEY
         string "Device key for Thingsboard provisioning"
         help

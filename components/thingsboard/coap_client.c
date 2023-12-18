@@ -105,7 +105,7 @@ esp_err_t coap_client_init(void *message_handler, char *device_token) {
         ESP_LOGE(TAG, "Error en malloc para COAP_SERVER_URI.");
         return ESP_ERR_NO_MEM;
     }
-    sprintf(COAP_SERVER_URI, "coap://%s", CONFIG_THINGSBOARD_URL);
+    sprintf(COAP_SERVER_URI, "coaps://%s", CONFIG_THINGSBOARD_URL);
 
 
     /* Set up the CoAP context */
