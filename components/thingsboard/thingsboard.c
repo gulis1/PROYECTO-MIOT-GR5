@@ -13,6 +13,7 @@
 
 const char *TAG = "thingsboard";
 
+static char *NVS_DEVICE_TOKEN_KEY = "device_token";
 static char *DEVICE_TOKEN = NULL;
 static nvs_handle_t nvshandle;
 
@@ -24,12 +25,12 @@ extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
 
 cJSON* generate_provision_json() {
     cJSON *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
     cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
     cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
     
     return json;
 }
+
 
 esp_err_t parse_received_device_token(char* response, int response_len) {
 
@@ -46,6 +47,15 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
         return ESP_FAIL;
     }
     
+    esp_err_t err = nvs_set_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en nvs_set_str: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    ESP_LOGI(TAG, "Saved received provision token in NVS");
+    nvs_close(nvshandle);
+
     cJSON_free(response_json);
     return ESP_OK;
 }
@@ -77,11 +87,7 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 
             
                 ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
-                cJSON *json = cJSON_CreateObject();
-                cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
-                cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
-                cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
-
+                cJSON *json = generate_provision_json();
                 char *json_payload = cJSON_PrintUnformatted(json);
 
                 vTaskDelay(2000 / portTICK_PERIOD_MS); // TODO: revisar esta chapuza.
@@ -206,11 +212,11 @@ esp_err_t thingsboard_start() {
         return err;
     }
 
-    err = nvs_get_str(nvshandle, "thingsboard_device_token", NULL, &len);
+    err = nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, NULL, &len);
     if (err == ESP_OK) {
         ESP_LOGI(TAG, "Thingsboard token found in NVS");
         DEVICE_TOKEN = malloc(len);
-        nvs_get_str(nvshandle, "thingsboard_device_token", DEVICE_TOKEN, &len);
+        nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN, &len);
         nvs_close(nvshandle);
     }
 
