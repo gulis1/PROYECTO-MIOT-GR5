@@ -23,14 +23,16 @@ void main_task() {
         ESP_LOGE(TAG, "Provisonment failed.");
         return;
     }
-
+    printf("fuera del bucle\n");
     while (true) {
         
         transicion_t transicion;
+        printf("antes de la queue y dentro del bucle\n");
         if (xQueueReceive(fsm_queue, &transicion, portMAX_DELAY) == pdFALSE) {
             ESP_LOGE(TAG, "Error en xQueueReceive.");
             continue;
         }
+        printf("despues de la queue y dentro del bucle\n");
 
         switch (estado_actual) {
 
@@ -97,13 +99,13 @@ void app_main(void) {
     // Creación de la cola.
     fsm_queue = xQueueCreate(16, sizeof(transicion_t));
 
-    err = sensores_init(sensores_handler);
+    //err = sensores_init(sensores_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en sensores_init: %s", esp_err_to_name(err));
         return;
     }
 
-    err = thingsboard_init(thingsboard_handler);
+    //err = thingsboard_init(thingsboard_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en thingsboard_init: %s", esp_err_to_name(err));
         return;

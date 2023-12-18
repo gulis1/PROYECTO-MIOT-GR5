@@ -38,6 +38,7 @@ menu "Sueño profundo"
         default 0
         help
             Ingrese SEGUNDO en la que terminara el dispositivo de funcionar
+endmenu
 
 menu "provision Configuration"
 
