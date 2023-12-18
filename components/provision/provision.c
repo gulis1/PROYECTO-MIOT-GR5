@@ -24,6 +24,7 @@ ESP_EVENT_DEFINE_BASE(PROVISION_EVENT);
 
 const static char *TAG = "PROVISION";
 static prov_info_t PROVISION_INFO;
+nvs_handle_t nvsHandle;
 
 #if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
 #if CONFIG_EXAMPLE_PROV_SEC2_DEV_MODE
@@ -127,6 +128,17 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                          "\n\tSSID     : %s\n\tPassword : %s",
                          (const char *) wifi_sta_cfg->ssid,
                          (const char *) wifi_sta_cfg->password);
+                PROVISION_INFO.wifi_pass = strdup((const char *) wifi_sta_cfg->password);
+                PROVISION_INFO.wifi_ssid = strdup((const char *) wifi_sta_cfg->ssid);
+
+                esp_err_t err;
+                printf("password:%s ssid:%s\n" ,PROVISION_INFO.wifi_pass, PROVISION_INFO.wifi_ssid);
+                err = nvs_set_str(nvsHandle, "wifi_pass", PROVISION_INFO.wifi_pass);
+                ESP_LOGE(TAG, "Error setStr: %s", esp_err_to_name(err));
+                nvs_set_str(nvsHandle, "wifi_ssid", PROVISION_INFO.wifi_ssid);
+                nvs_close(nvsHandle);
+                void *data = &PROVISION_INFO;
+                esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
                 break;
             }
             case WIFI_PROV_CRED_FAIL: {
@@ -158,7 +170,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             default:
                 break;
         }
-    } else if (event_base == WIFI_EVENT) {
+    } /*else if (event_base == WIFI_EVENT) {
         switch (event_id) {
             case WIFI_EVENT_STA_START:
                 esp_wifi_connect();
@@ -181,9 +193,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
-        /* Signal main application to continue execution */
+        // Signal main application to continue execution 
         //xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
-#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
+//#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
     } else if (event_base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
         switch (event_id) {
             case PROTOCOMM_TRANSPORT_BLE_CONNECTED:
@@ -196,7 +208,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
         }
 #endif
-    }
+    }*/
 }
 
 
@@ -286,7 +298,7 @@ void start_provisioning()
      * configuration parameters set above */
     ESP_ERROR_CHECK(wifi_prov_mgr_init(config));
 
-    bool provisioned = false;
+    //bool provisioned = false;
 #ifdef CONFIG_EXAMPLE_RESET_PROVISIONED
     wifi_prov_mgr_reset_provisioning();
 #else
@@ -295,7 +307,7 @@ void start_provisioning()
 
 #endif
     /* If device is not yet provisioned start provisioning service */
-    if (!provisioned) {
+    //if (!provisioned) {
         ESP_LOGI(TAG, "Starting provisioning");
 
         /* What is the Device Service Name that we want
@@ -422,41 +434,12 @@ void start_provisioning()
 #else /* CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP */
         wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_SOFTAP);
 #endif /* CONFIG_EXAMPLE_PROV_TRANSPORT_BLE */
-    } else {
-        ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
-
-        /* We don't need the manager as device is already provisioned,
-         * so let's release it's resources */
-        wifi_prov_mgr_deinit();
-    }
-
-    /* Wait for Wi-Fi connection */
-    //xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
-
-    /* Start main application now */
-#if CONFIG_EXAMPLE_REPROVISIONING
-    while (1) {
-        for (int i = 0; i < 10; i++) {
-            ESP_LOGI(TAG, "Hello World!");
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-        }
-
-        /* Resetting provisioning state machine to enable re-provisioning */
-        wifi_prov_mgr_reset_sm_state_for_reprovision();
-
-        /* Wait for Wi-Fi connection */
-        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
-    }
-
-#endif
-
 }
 
 esp_err_t init_provision(void *event_handler) {
 
     size_t len;
     esp_err_t err;
-    nvs_handle_t nvs_handle;
 
     err = esp_event_handler_register(PROVISION_EVENT, ESP_EVENT_ANY_ID, event_handler, NULL);
     if (err != ESP_OK) {
@@ -464,23 +447,27 @@ esp_err_t init_provision(void *event_handler) {
         return err;
     }
 
-    err = nvs_open("nvs", NVS_READWRITE, &nvs_handle);
+    err = nvs_open("nvs", NVS_READWRITE, &nvsHandle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en nvs_open: %s", esp_err_to_name(err));
         return err;
     }
 
-    err = nvs_get_str(nvs_handle, "wifi_ssid", NULL, &len);
+    err = nvs_get_str(nvsHandle, "wifi_ssid", NULL, &len);
     if (err == ESP_OK) {
 
         // Aquí se entra si se encuentran datos de provisionamiento
         // en el NVS.
         PROVISION_INFO.wifi_ssid = malloc(len);
-        ESP_ERROR_CHECK(nvs_get_str(nvs_handle, "wifi_ssid", PROVISION_INFO.wifi_ssid, &len));
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "wifi_ssid", PROVISION_INFO.wifi_ssid, &len));
 
-        ESP_ERROR_CHECK(nvs_get_str(nvs_handle, "wifi_pass", NULL, &len));
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "wifi_pass", NULL, &len));
         PROVISION_INFO.wifi_pass = malloc(len);
-        ESP_ERROR_CHECK(nvs_get_str(nvs_handle, "wifi_pass", PROVISION_INFO.wifi_pass, &len));
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "wifi_pass", PROVISION_INFO.wifi_pass, &len));
+        nvs_close(nvsHandle);
+        ESP_LOGI(TAG,"el wifi leido de la nvs es: ssid=%s y password:%s",PROVISION_INFO.wifi_ssid, PROVISION_INFO.wifi_pass);
+        void *data = &PROVISION_INFO;
+        esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
     } 
     else if (err == ESP_ERR_NVS_NOT_FOUND) {
         
@@ -492,11 +479,6 @@ esp_err_t init_provision(void *event_handler) {
         ESP_LOGW(TAG, "No hay datos de provisionamiento en flash, usando los del menuconfig.");
         start_provisioning();
 
-        PROVISION_INFO.wifi_ssid = malloc(sizeof(CONFIG_ESP_WIFI_SSID));
-        strcpy(PROVISION_INFO.wifi_ssid, CONFIG_ESP_WIFI_SSID);
-
-        PROVISION_INFO.wifi_pass = malloc(sizeof(CONFIG_ESP_WIFI_PASSWORD));
-        strcpy(PROVISION_INFO.wifi_pass, CONFIG_ESP_WIFI_PASSWORD);
     }
     else {
 
@@ -504,12 +486,5 @@ esp_err_t init_provision(void *event_handler) {
         ESP_LOGE(TAG, "Error en nvs_get_str: %s", esp_err_to_name(err));
         return err;
     };
-
-    // Se publica el evento con los datos de provisionamiento.
-    void *data = &PROVISION_INFO;
-    esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
-
-
-    nvs_close(nvs_handle);
     return ESP_OK;    
 }
