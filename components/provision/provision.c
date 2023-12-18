@@ -159,7 +159,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             default:
                 break;
         }
-    } else if (event_base == WIFI_EVENT) {
+    } /*else if (event_base == WIFI_EVENT) {
         switch (event_id) {
             case WIFI_EVENT_STA_START:
                 esp_wifi_connect();
@@ -184,7 +184,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
         /* Signal main application to continue execution */
         //xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
-#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
+/*#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
     } else if (event_base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
         switch (event_id) {
             case PROTOCOMM_TRANSPORT_BLE_CONNECTED:
@@ -197,7 +197,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
         }
 #endif
-    }
+    }*/
 }
 
 
@@ -301,7 +301,7 @@ void start_provisioning()
 
 #endif
     /* If device is not yet provisioned start provisioning service */
-    if (!provisioned) {
+    //if (!provisioned) {
         ESP_LOGI(TAG, "Starting provisioning");
 
         /* What is the Device Service Name that we want
@@ -428,13 +428,13 @@ void start_provisioning()
 #else /* CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP */
         wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_SOFTAP);
 #endif /* CONFIG_EXAMPLE_PROV_TRANSPORT_BLE */
-    } else {
+   /* } else {
         ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
 
         /* We don't need the manager as device is already provisioned,
          * so let's release it's resources */
-        wifi_prov_mgr_deinit();
-    }
+       // wifi_prov_mgr_deinit();
+    //}
 
     /* Wait for Wi-Fi connection */
     //xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
@@ -480,8 +480,8 @@ esp_err_t init_provision(void *event_handler) {
         return err;
     }
 
-    err = nvs_get_str(nvs_handle, "wifi_ssid", NULL, &len);
-    if (err == ESP_OK) {
+    //err = nvs_get_str(nvs_handle, "wifi_ssid", NULL, &len);
+    if (false/*err == ESP_OK*/) {
 
         // Aquí se entra si se encuentran datos de provisionamiento
         // en el NVS.
@@ -492,7 +492,7 @@ esp_err_t init_provision(void *event_handler) {
         PROVISION_INFO.wifi_pass = malloc(len);
         ESP_ERROR_CHECK(nvs_get_str(nvs_handle, "wifi_pass", PROVISION_INFO.wifi_pass, &len));
     } 
-    else if (err == ESP_ERR_NVS_NOT_FOUND) {
+    else if (true/*err == ESP_ERR_NVS_NOT_FOUND*/) {
         
         // Aquí se entra si no se encuentran datos de provisionamiento
         // en el NVS.
