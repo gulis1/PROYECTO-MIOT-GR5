@@ -23,9 +23,6 @@ static data_sensores_t DATA_SENSORES;
 
 char info;
 
-
-
-
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
 
@@ -67,10 +64,6 @@ static void lectura_sensores_callback(){
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root);
 }
 
-
-
-    
-
 esp_err_t sensores_init(void *sensores_handler) {
 
     esp_err_t err;
@@ -109,36 +102,22 @@ esp_err_t sensores_init(void *sensores_handler) {
     return ESP_OK;
 }
 
-
-
 void calibracion() {
 
-    for (int i = 0; i < 14; i++) { 
+    for (int i = 0; i < 1; i++) { 
         sgp30_IAQ_measure(&main_sgp30_sensor);
         ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
     }
 
+    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, CALIBRACION_REALIZADA, NULL, 0, portMAX_DELAY));
 
-    //Envio post
-    //ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT,CALIBRACION_REALIZADA, &DATA_SENSORES, sizeof(DATA_SENSORES), portMAX_DELAY));
-    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT,CALIBRACION_REALIZADA, NULL, sizeof(NULL), portMAX_DELAY));
-    
     // TODO: guradar valores calibracion en la flash 
-
-    // // Read initial baselines 
-    // uint16_t eco2_baseline, tvoc_baseline;
-    // sgp30_get_IAQ_baseline(&main_sgp30_sensor, &eco2_baseline, &tvoc_baseline);
-    // ESP_LOGI(TAG, "BASELINES - TVOC: %d,  eCO2: %d",  tvoc_baseline, eco2_baseline);
-
     vTaskDelete(NULL);
 }
-
-
 
 esp_err_t start_calibracion(){
      // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaraciom 
     xTaskCreate(calibracion, "Tarea calibracion", 2048, NULL, 5, NULL);
-
     return ESP_OK;
 }
 

@@ -91,10 +91,14 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
 
 estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
+    ESP_LOGW(TAG, "holaaaaaaaaaaaaaaaaaaaaaaa0");
+
     switch (trans.tipo) {
 
         case TRANS_CALIBRACION_REALIZADA:
+            ESP_LOGW(TAG, "HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAA1");
             ESP_ERROR_CHECK(sensores_start());
+            ESP_LOGW(TAG, "HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAA2");
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;
             
@@ -108,6 +112,7 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
+
             char json_buffer[128];
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);

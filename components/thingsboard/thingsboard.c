@@ -179,15 +179,14 @@ esp_err_t thingsboard_init(void *handler) {
     }
 
     #if CONFIG_USE_COAP
-        err = coap_client_init(coap_handler, DEVICE_TOKEN);
+        err = coap_client_init(coap_handler, cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_server_init: %s", esp_err_to_name(err));
             return err;
         }
     #elif CONFIG_USE_MQTT
         // Iniciación MQTT. Se le pasa el handler de los eventos
-        // MQTT para que se registre. 
-        ESP_LOGI(TAG, "Certificado: \n%s", cert_pem_start);
+        // MQTT para que se registre.
         err = mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
@@ -228,7 +227,17 @@ esp_err_t thingsboard_start() {
     #if CONFIG_USE_MQTT
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        if (DEVICE_TOKEN == NULL) {
+        err = coap_client_start();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en coap_client_start: %s", esp_err_to_name(err));
+            return ESP_FAIL;
+        }
+
+        if (DEVICE_TOKEN != NULL) {
+            return esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+        }
+
+        else {
             cJSON *provision_json = generate_provision_json();
             char *provision_payload = cJSON_PrintUnformatted(provision_json);
             err = coap_client_provision_send(provision_payload);
@@ -237,7 +246,6 @@ esp_err_t thingsboard_start() {
             return err;
         }
 
-        else return ESP_OK;
     #else
         return ESP_FAIL;
     #endif
