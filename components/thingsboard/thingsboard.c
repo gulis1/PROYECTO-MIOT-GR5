@@ -65,6 +65,7 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 void restart_mqtt_client() {
+    
     ESP_LOGI(TAG, "Reiniciando cliente MQTT...");
     vTaskDelay(2000 / portMAX_DELAY);
     ESP_ERROR_CHECK(mqtt_deinit());
@@ -172,9 +173,30 @@ static coap_response_t coap_handler(coap_session_t *session,
 esp_err_t thingsboard_init(void *handler) {
 
     esp_err_t err;
+    size_t len;
+
     err = esp_event_handler_register(THINGSBOARD_EVENT, ESP_EVENT_ANY_ID, handler, NULL);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_event_handler_register: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = nvs_open("nvs", NVS_READWRITE, &nvshandle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en nvs_open: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, NULL, &len);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "Thingsboard token found in NVS");
+        DEVICE_TOKEN = malloc(len);
+        nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN, &len);
+        nvs_close(nvshandle);
+    }
+
+    else if (err != ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGE(TAG, "Error en nvs_get_str(): %s", esp_err_to_name(err));
         return err;
     }
 
@@ -203,26 +225,6 @@ esp_err_t thingsboard_init(void *handler) {
 esp_err_t thingsboard_start() {
 
     esp_err_t err;
-    size_t len;
-
-    err = nvs_open("nvs", NVS_READWRITE, &nvshandle);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en nvs_open: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    err = nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, NULL, &len);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Thingsboard token found in NVS");
-        DEVICE_TOKEN = malloc(len);
-        nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN, &len);
-        nvs_close(nvshandle);
-    }
-
-    else if (err != ESP_ERR_NVS_NOT_FOUND) {
-        ESP_LOGE(TAG, "Error en nvs_get_str(): %s", esp_err_to_name(err));
-        return err;
-    }
 
     #if CONFIG_USE_MQTT
         return mqtt_start();

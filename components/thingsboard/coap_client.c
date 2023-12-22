@@ -96,7 +96,7 @@ static coap_address_t *coap_get_address(coap_uri_t *uri) {
     return &dst_addr;
 }
 
-esp_err_t coap_client_init(void *message_handler, char *cert) {
+esp_err_t coap_client_init(void *message_handler, const char *cert) {
 
     if (!coap_dtls_is_supported()) {
         ESP_LOGE(TAG, "Coap DTLS not supported");
@@ -292,6 +292,7 @@ esp_err_t coap_client_provision_send(char *content) {
         ESP_LOGE(TAG, "Error en coap_send()");
         return ESP_FAIL;
     }
+
 
     return ESP_OK;
 }

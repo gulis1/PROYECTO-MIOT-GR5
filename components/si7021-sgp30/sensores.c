@@ -21,13 +21,8 @@ static sgp30_dev_t main_sgp30_sensor;
 // crear la estatica de la estructura
 static data_sensores_t DATA_SENSORES;
 
-char info;
-
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
-
-static int conteo=0;
-//char buffer[80];
 
 
 char* data_sensores_to_json_string(data_sensores_t* info) {
@@ -117,7 +112,7 @@ void calibracion() {
 
 esp_err_t start_calibracion(){
      // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaraciom 
-    xTaskCreate(calibracion, "Tarea calibracion", 2048, NULL, 5, NULL);
+    xTaskCreate(calibracion, "Tarea calibracion", 4096, NULL, 5, NULL);
     return ESP_OK;
 }
 
