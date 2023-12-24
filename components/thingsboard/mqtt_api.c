@@ -25,8 +25,7 @@ esp_err_t mqtt_init(void *event_handler, char *device_token, char *server_cert) 
             .address.uri = mqtt_url,
             .verification.certificate = server_cert
         },
-        .credentials.username = device_token != NULL ? device_token : "provision",
-        
+        .credentials.username = device_token != NULL ? device_token : "provision",   
     };
 
     mqtt_client = esp_mqtt_client_init(&mqtt_config);
