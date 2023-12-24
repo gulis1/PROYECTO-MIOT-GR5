@@ -112,15 +112,12 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
     }
 }
 
-/////////////////////////////////////////////
-// este es el handler de los sensores
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
     transicion_t trans;
-    ESP_LOGW("TAG", "HOLa: transicion sensores");
+
     switch (event_id) {
         case SENSORES_ENVIAN_DATO:
-            ESP_LOGW("TAG", "HOLa malo: transicion sensores");
 
             data_sensores_t *info_data_sensores_a_pasar = *((data_sensores_t**)event_data);
             trans.tipo = TRANS_LECTURA_SENSORES;
@@ -129,14 +126,9 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
             break;
 
         case CALIBRACION_REALIZADA:
-            ESP_LOGW("TAG", "HOLa2: transicion sensores");
 
             trans.tipo = TRANS_CALIBRACION_REALIZADA;
-            ESP_LOGW("TAG", "HOLa3: transicion sensores");
-
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-            ESP_LOGW("TAG", "HOLa4: transicion sensores");
-
             break;
 
         default:
@@ -144,8 +136,6 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
     }
 }
 
-
-//Este es el handler de la Hora
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
 
         transicion_t trans;
@@ -160,8 +150,6 @@ void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
-
-//este es el halder del deep_sleep
 void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
     transicion_t trans;
         switch (event_id) {

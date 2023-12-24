@@ -91,14 +91,10 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
 
 estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
-    ESP_LOGW(TAG, "holaaaaaaaaaaaaaaaaaaaaaaa0");
-
     switch (trans.tipo) {
 
         case TRANS_CALIBRACION_REALIZADA:
-            ESP_LOGW(TAG, "HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAA1");
             ESP_ERROR_CHECK(sensores_start());
-            ESP_LOGW(TAG, "HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAA2");
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;
             
