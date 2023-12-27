@@ -19,7 +19,6 @@
 #ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP
 #include <wifi_provisioning/scheme_softap.h>
 #endif /* CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP */
-#include "qrcode.h"
 
 ESP_EVENT_DEFINE_BASE(PROVISION_EVENT);
 
@@ -252,12 +251,7 @@ static void wifi_prov_print_qr(const char *name, const char *username, const cha
                     ",\"transport\":\"%s\"}",
                     PROV_QR_VERSION, name, transport);
     }
-#ifdef CONFIG_EXAMPLE_PROV_SHOW_QR
-    ESP_LOGI(TAG, "Scan this QR code from the provisioning application for Provisioning.");
-    esp_qrcode_config_t cfg = ESP_QRCODE_CONFIG_DEFAULT();
-    esp_qrcode_generate(&cfg, payload);
-#endif /* CONFIG_APP_WIFI_PROV_SHOW_QR */
-    ESP_LOGI(TAG, "If QR code is not visible, copy paste the below URL in a browser.\n%s?data=%s", QRCODE_BASE_URL, payload);
+
 }
 
 void start_provisioning()
@@ -309,7 +303,7 @@ void start_provisioning()
     wifi_prov_mgr_reset_provisioning();
 #else
     /* Let's find out if the device is provisioned */
-    ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
+    // ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
 
 #endif
     /* If device is not yet provisioned start provisioning service */
@@ -440,20 +434,6 @@ void start_provisioning()
 #else /* CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP */
         wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_SOFTAP);
 #endif /* CONFIG_EXAMPLE_PROV_TRANSPORT_BLE */
-   /* } else {
-        ESP_LOGI(TAG, "Already provisioned, starting Wi-Fi STA");
-
-        // We don't need the manager as device is already provisioned,
-        // so let's release it's resources 
-       // wifi_prov_mgr_deinit();
-    //}
-
-    // Wait for Wi-Fi connection 
-    //xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_EVENT, true, true, portMAX_DELAY);
-
-    // Start main application now 
-    */
-
 }
 
 esp_err_t init_provision(void *event_handler) {

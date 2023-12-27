@@ -108,6 +108,7 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
+
             char json_buffer[128];
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);

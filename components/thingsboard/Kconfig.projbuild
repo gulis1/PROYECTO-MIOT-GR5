@@ -2,23 +2,12 @@ menu "Thingsboard configuration"
 
     config THINGSBOARD_URL
         string "Thingsboard url"
-        help
-            URL of Thingsboard instance.
-    
-    config THINGSBOARD_DEVICE_NAME
-        string "Device name para Thingsboard"
-        help
-            Temporal, hasta que tengamos el provisionamiento.
     
     config THINGSBOARD_PROVISION_DEVICE_KEY
-        string "Device key for Thingsboard provisioning"
-        help
-            Temporal, hasta que tengamos el provisionamiento.
+        string "Device key para el provisionamiento via Thingsboard."
 
     config THINGSBOARD_PROVISION_DEVICE_SECRET
-        string "Device secret for Thingsboard provisioning"
-        help
-            Temporal, hasta que tengamos el provisionamiento
+        string "Device secret para el provisionamiento via Thingsboard."
 
     # config THINGSBOARD_DEVICE_TOKEN
     #     string "Thingsboard device token"
@@ -36,5 +25,10 @@ menu "Thingsboard configuration"
         bool "coap"
 
     endchoice
+
+    config COAP_WAIT_MS
+        int "Tiempo de espera para coap_io_process"
+        default 20000
+        depends on USE_COAP
 
 endmenu

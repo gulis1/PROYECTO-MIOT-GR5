@@ -29,20 +29,22 @@
 const static char *TAG = "CoAP_client";
 
 static char *COAP_SERVER_URI = NULL;
+static char *SERVER_CERT = NULL;
 static coap_uri_t uri;
 static coap_context_t *coap_ctx = NULL;
 static coap_session_t *coap_session = NULL;
 static coap_optlist_t *optlist_telemetry = NULL;
 
+
 static void coap_io_callback() {
 
     while (true) {
-        coap_io_process(coap_ctx, COAP_IO_WAIT);
+        coap_io_process(coap_ctx, CONFIG_COAP_WAIT_MS);
     }
 }
 
-
 static coap_address_t *coap_get_address(coap_uri_t *uri) {
+
     static coap_address_t dst_addr;
     char *phostname = NULL;
     struct addrinfo hints;
@@ -96,17 +98,22 @@ static coap_address_t *coap_get_address(coap_uri_t *uri) {
     return &dst_addr;
 }
 
-esp_err_t coap_client_init(void *message_handler, char *device_token) {
+esp_err_t coap_client_init(void *message_handler, char *cert) {
 
-    coap_address_t *dst_addr;
+    if (!coap_dtls_is_supported()) {
+        ESP_LOGE(TAG, "Coap DTLS not supported");
+        return ESP_FAIL;
+    }
+
+
+    SERVER_CERT = cert;
 
     COAP_SERVER_URI = malloc(256); 
     if (COAP_SERVER_URI == NULL) {
         ESP_LOGE(TAG, "Error en malloc para COAP_SERVER_URI.");
         return ESP_ERR_NO_MEM;
     }
-    sprintf(COAP_SERVER_URI, "coap://%s", CONFIG_THINGSBOARD_URL);
-
+    sprintf(COAP_SERVER_URI, "coaps://%s:5684", CONFIG_THINGSBOARD_URL);
 
     /* Set up the CoAP context */
     coap_ctx = coap_new_context(NULL);
@@ -114,24 +121,48 @@ esp_err_t coap_client_init(void *message_handler, char *device_token) {
         ESP_LOGE(TAG, "Erro en coap_new_context()");
         return ESP_FAIL;
     }
-    coap_context_set_block_mode(coap_ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY);
 
+    coap_context_set_keepalive(coap_ctx, 100);
+
+    // coap_context_set_block_mode(coap_ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY);
     coap_register_response_handler(coap_ctx, message_handler);
+
+    xTaskCreate(coap_io_callback, "COAP io task", 6144, NULL, 6, NULL);
+
+    return ESP_OK;
+}
+
+esp_err_t coap_client_start() {
 
     if (coap_split_uri((const uint8_t *)COAP_SERVER_URI, strlen(COAP_SERVER_URI), &uri) == -1) {
         ESP_LOGE(TAG, "Error en coap_split_uri()");
         return ESP_FAIL;
     }
 
-    dst_addr = coap_get_address(&uri);
+    coap_address_t *dst_addr = coap_get_address(&uri);
     if (dst_addr == NULL) {
         ESP_LOGE(TAG, "Error en coap_get_address()");
         return ESP_FAIL;
     }
 
-    coap_session = coap_new_client_session(coap_ctx, NULL, dst_addr,
-                                          uri.scheme == COAP_URI_SCHEME_COAP_TCP ? COAP_PROTO_TCP :
-                                          COAP_PROTO_UDP);
+    coap_set_log_level(COAP_LOG_DEBUG);
+
+    // Create the DTLS session
+    coap_dtls_pki_t dtls =  {
+        .version = COAP_DTLS_PKI_SETUP_VERSION,
+        .verify_peer_cert = 1,        // Verify peer certificate
+        .allow_self_signed = 0,
+        .allow_expired_certs = 0,     // No expired certificates
+        .cert_chain_validation = 1,   // Validate the chain
+        .cert_chain_verify_depth = 3,
+        .pki_key = {
+            .key.pem_buf.ca_cert = (const uint8_t*) SERVER_CERT,
+            .key.pem_buf.ca_cert_len = strlen(SERVER_CERT),
+            .key_type = COAP_PKI_KEY_PEM_BUF
+        }
+    };
+
+    coap_session = coap_new_client_session_pki(coap_ctx, NULL, dst_addr, COAP_PROTO_DTLS, &dtls);
     if (coap_session == NULL) {
         ESP_LOGE(TAG, "coap_new_client_session() failed");
         return ESP_FAIL;
@@ -259,7 +290,6 @@ esp_err_t coap_client_provision_send(char *content) {
         return ESP_FAIL;
     }
 
-
     if (coap_add_data(request, strlen(content), (unsigned char*) content) == 0) {
         ESP_LOGE(TAG, "Error en coap_add_data_large_request()");
         return ESP_FAIL;
@@ -269,7 +299,6 @@ esp_err_t coap_client_provision_send(char *content) {
         ESP_LOGE(TAG, "Error en coap_send()");
         return ESP_FAIL;
     }
-    
-    xTaskCreate(coap_io_callback, "COAP io task", 4096, NULL, 4, NULL);
+
     return ESP_OK;
 }
