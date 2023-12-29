@@ -25,7 +25,6 @@
 #include <esp_event.h>
 #include <lwip/sockets.h>
 #include <coap3/coap.h>
-#include <esp_timer.h>
 
 const static char *TAG = "CoAP_client";
 
@@ -34,11 +33,12 @@ static coap_uri_t uri;
 static coap_context_t *coap_ctx = NULL;
 static coap_session_t *coap_session = NULL;
 static coap_optlist_t *optlist_telemetry = NULL;
-static esp_timer_handle_t coap_io_timer;
 
-static void coap_io_callback(void *arg) {
+static void coap_io_callback() {
 
-    coap_io_process(coap_ctx, COAP_IO_NO_WAIT);
+    while (true) {
+        coap_io_process(coap_ctx, COAP_IO_WAIT);
+    }
 }
 
 
@@ -270,16 +270,6 @@ esp_err_t coap_client_provision_send(char *content) {
         return ESP_FAIL;
     }
     
-    esp_timer_create_args_t timer_args = {
-        .callback = coap_io_callback,
-        .name = "coap io timer"
-    };
-    esp_timer_create(&timer_args, &coap_io_timer);
-    esp_timer_start_periodic(coap_io_timer, 1 * 1000000);
-    // // if (coap_io_process(coap_ctx, COAP_IO_NO_WAIT) == -1) {
-    // //     ESP_LOGE(TAG, "Error en coap_io_process");
-    // //     return ESP_FAIL;
-    // // }
-
+    xTaskCreate(coap_io_callback, "COAP io task", 4096, NULL, 4, NULL);
     return ESP_OK;
 }

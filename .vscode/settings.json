@@ -11,7 +11,10 @@
     "string_view": "c",
     "provision.h": "c",
     "esp_gatt_defs.h": "c",
-    "task.h": "c"
+    "task.h": "c",
+    "*.tcc": "c",
+    "cstring": "c",
+    "algorithm": "c"
   },
   "idf.portWin": "COM5"
 }

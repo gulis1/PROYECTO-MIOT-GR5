@@ -27,5 +27,5 @@ enum {
 ESP_EVENT_DECLARE_BASE(HORA_CONFIG_EVENT);
 
 esp_err_t sntp_init_hora(void *hora_handler);
-esp_err_t init_sincronizacion_hora();
+esp_err_t start_time_sync();
 esp_err_t obtain_time(void); //creo que no haria falta

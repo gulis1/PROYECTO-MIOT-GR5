@@ -131,9 +131,10 @@ void calibracion() {
 }
 
 
-esp_err_t init_calibracion(){
-     // El SGP30 inicializa haciendo un envio de TVOC =400 14 veces 
-    xTaskCreate(calibracion, "task calibracion", 1024, NULL, 5, NULL); //4096
+esp_err_t start_calibracion(){
+     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaraciom 
+    xTaskCreate(calibracion, "Tarea calibracion", 2048, NULL, 5, NULL);
+
     return ESP_OK;
 }
 

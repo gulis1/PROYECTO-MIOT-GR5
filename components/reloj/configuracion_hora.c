@@ -97,8 +97,8 @@ esp_err_t sntp_init_hora(void *hora_handler){
     return ESP_OK;
 }
 
-esp_err_t init_sincronizacion_hora(){
-    xTaskCreate(sincronizacion_hora,"task sincornizacion",4096,NULL,5,NULL);
+esp_err_t start_time_sync(){
+    xTaskCreate(sincronizacion_hora,"Tarea sincronizacion", 4096, NULL, 5, NULL);
     return ESP_OK;
 }
 

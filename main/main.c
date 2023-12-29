@@ -145,5 +145,5 @@ void app_main(void) {
 
 
     TaskHandle_t task_handle;
-    xTaskCreate(main_task, "Main task", 3072, NULL, 5, &task_handle);
+    xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }

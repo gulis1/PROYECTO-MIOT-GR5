@@ -47,8 +47,8 @@ estado_t trans_estado_provisionado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_WIFI_READY:
-            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
-            ESP_ERROR_CHECK(init_sincronizacion_hora());
+            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/ //ANGEL ESto es para sincronizar la hora
+            ESP_ERROR_CHECK(start_time_sync());
             return ESTADO_CONECTADO;
             
         default:
@@ -76,7 +76,7 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_THINGSBOARD_READY:
-            ESP_ERROR_CHECK(init_calibracion());
+            ESP_ERROR_CHECK(start_calibracion());
             return ESTADO_THINGSBOARD_READY;
         
         case TRANS_THINGSBOARD_UNAVAILABLE:

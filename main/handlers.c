@@ -16,34 +16,12 @@
 
 #include <esp_event.h>
 #include <esp_log.h>
-#include <esp_netif.h>
-#include <time.h>
-#include <sys/time.h>
-#include <esp_attr.h>
-#include <esp_sleep.h>
-#include <esp_sntp.h>
 
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-#include "thingsboard.h"
-
-/////////////////
-  
-  
-  
-#include <esp_sntp.h>
-#include <esp_netif.h>
-
-#include "esp_check.h"
-
-
-#include <time.h>
-#include <sys/time.h>
-#include "esp_attr.h"
-
-#include "esp_sntp.h"
+#include "thingsboard.h" 
 #include "configuracion_hora.h"
 #include "sueno_profundo.h"
 #include "bluetooth.h"
