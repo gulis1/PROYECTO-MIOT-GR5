@@ -84,7 +84,7 @@ static esp_err_t example_get_sec2_verifier(const char **verifier, uint16_t *veri
     *verifier_len = sizeof(sec2_verifier);
     return ESP_OK;
 #elif CONFIG_EXAMPLE_PROV_SEC2_PROD_MODE
-    /* This code needs to be updated with appropriate implementation to provide verifier */
+    // This code needs to be updated with appropriate implementation to provide verifier 
     ESP_LOGE(TAG, "Not implemented!");
     return ESP_FAIL;
 #endif
@@ -92,10 +92,8 @@ static esp_err_t example_get_sec2_verifier(const char **verifier, uint16_t *veri
 #endif
 #endif
 
-#define PROV_QR_VERSION         "v1"
 #define PROV_TRANSPORT_SOFTAP   "softap"
 #define PROV_TRANSPORT_BLE      "ble"
-#define QRCODE_BASE_URL         "https://espressif.github.io/esp-jumpstart/qrcode.html"
 
 /* Handler for the optional provisioning endpoint registered by the application.
  * The data format can be chosen by applications. Here, we are using plain ascii text.
@@ -130,9 +128,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                          (const char *) wifi_sta_cfg->password);
                 PROVISION_INFO.wifi_pass = strdup((const char *) wifi_sta_cfg->password);
                 PROVISION_INFO.wifi_ssid = strdup((const char *) wifi_sta_cfg->ssid);
-
                 esp_err_t err;
-                printf("password:%s ssid:%s\n" ,PROVISION_INFO.wifi_pass, PROVISION_INFO.wifi_ssid);
                 err = nvs_set_str(nvsHandle, "wifi_pass", PROVISION_INFO.wifi_pass);
                 ESP_LOGE(TAG, "Error setStr: %s", esp_err_to_name(err));
                 nvs_set_str(nvsHandle, "wifi_ssid", PROVISION_INFO.wifi_ssid);
@@ -170,47 +166,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             default:
                 break;
         }
-    } /*else if (event_base == WIFI_EVENT) {
-        switch (event_id) {
-            case WIFI_EVENT_STA_START:
-                esp_wifi_connect();
-                break;
-            case WIFI_EVENT_STA_DISCONNECTED:
-                ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
-                esp_wifi_connect();
-                break;
-#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP
-            case WIFI_EVENT_AP_STACONNECTED:
-                ESP_LOGI(TAG, "SoftAP transport: Connected!");
-                break;
-            case WIFI_EVENT_AP_STADISCONNECTED:
-                ESP_LOGI(TAG, "SoftAP transport: Disconnected!");
-                break;
-#endif
-            default:
-                break;
-        }
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
-        // Signal main application to continue execution 
-        //xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
-//#ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
-    } else if (event_base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
-        switch (event_id) {
-            case PROTOCOMM_TRANSPORT_BLE_CONNECTED:
-                ESP_LOGI(TAG, "BLE transport: Connected!");
-                break;
-            case PROTOCOMM_TRANSPORT_BLE_DISCONNECTED:
-                ESP_LOGI(TAG, "BLE transport: Disconnected!");
-                break;
-            default:
-                break;
-        }
-#endif
-    }*/
+    }
 }
-
 
 esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ssize_t inlen,
                                           uint8_t **outbuf, ssize_t *outlen, void *priv_data)
@@ -227,31 +184,6 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
     *outlen = strlen(response) + 1; /* +1 for NULL terminating byte */
 
     return ESP_OK;
-}
-
-static void wifi_prov_print_qr(const char *name, const char *username, const char *pop, const char *transport)
-{
-    if (!name || !transport) {
-        ESP_LOGW(TAG, "Cannot generate QR code payload. Data missing.");
-        return;
-    }
-    char payload[150] = {0};
-    if (pop) {
-#if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_1
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, pop, transport);
-#elif CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"username\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, username, pop, transport);
-#endif
-    } else {
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, transport);
-    }
-
 }
 
 void start_provisioning()
@@ -430,7 +362,7 @@ void start_provisioning()
         // wifi_prov_mgr_deinit();
         /* Print QR code for provisioning */
 #ifdef CONFIG_EXAMPLE_PROV_TRANSPORT_BLE
-        wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_BLE);
+        //wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_BLE);
 #else /* CONFIG_EXAMPLE_PROV_TRANSPORT_SOFTAP */
         wifi_prov_print_qr(service_name, username, pop, PROV_TRANSPORT_SOFTAP);
 #endif /* CONFIG_EXAMPLE_PROV_TRANSPORT_BLE */
