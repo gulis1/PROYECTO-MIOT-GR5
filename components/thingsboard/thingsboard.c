@@ -4,11 +4,15 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <cJSON.h>
-#include <lwip/sockets.h>
-#include <coap3/coap.h>
 
-#include "mqtt_api.h"
-#include "coap_client.h"
+#ifdef CONFIG_USE_COAP
+    #include <lwip/sockets.h>
+    #include <coap3/coap.h>
+    #include "coap_client.h"
+#elif CONFIG_USE_MQTT
+    #include "mqtt_api.h"
+#endif
+
 #include "thingsboard.h"
 
 const char *TAG = "thingsboard";
@@ -30,7 +34,6 @@ cJSON* generate_provision_json() {
     
     return json;
 }
-
 
 esp_err_t parse_received_device_token(char* response, int response_len) {
 
@@ -62,9 +65,9 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
 
 #ifdef CONFIG_USE_MQTT
 
-void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
-void restart_mqtt_client() {
+static void restart_mqtt_client() {
     
     ESP_LOGI(TAG, "Reiniciando cliente MQTT...");
     vTaskDelay(2000 / portMAX_DELAY);
@@ -74,7 +77,7 @@ void restart_mqtt_client() {
     vTaskDelete(NULL);
 }
 
-void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
     switch (event_id) {
 
@@ -137,6 +140,7 @@ static coap_response_t coap_handler(coap_session_t *session,
 
     coap_pdu_code_t rcvd_code = coap_pdu_get_code(received);
     if (COAP_RESPONSE_CLASS(rcvd_code) == 2) {
+
         if (coap_get_data_large(received, &data_len, &data, &offset, &total)) {
             if (data_len != total) {
                 ESP_LOGE(TAG, "Incomplete message received.");
@@ -146,13 +150,21 @@ static coap_response_t coap_handler(coap_session_t *session,
 
             if (DEVICE_TOKEN == NULL) {
                 // Provisionamiento recibido.
-                if (parse_received_device_token(data, data_len) != ESP_OK) {
+                if (parse_received_device_token((char*) data, data_len) != ESP_OK) {
                     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
                     return COAP_RESPONSE_OK;
                 }
 
                 ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
-                esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+
+                if (coap_set_device_token(DEVICE_TOKEN) != ESP_OK)
+                    ESP_LOGE(TAG, "Error en coap_set_device_token");
+                else 
+                    esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+            }
+
+            else {
+                
             }
 
             ESP_LOGI(TAG, "Received COAP message:\n%.*s\n", (int)data_len, data);
@@ -201,7 +213,7 @@ esp_err_t thingsboard_init(void *handler) {
     }
 
     #if CONFIG_USE_COAP
-        err = coap_client_init(coap_handler, cert_pem_start);
+        err = coap_client_init(coap_handler, (char*) cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_server_init: %s", esp_err_to_name(err));
             return err;
@@ -224,18 +236,23 @@ esp_err_t thingsboard_init(void *handler) {
 
 esp_err_t thingsboard_start() {
 
-    esp_err_t err;
 
     #if CONFIG_USE_MQTT
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        err = coap_client_start();
+        esp_err_t err = coap_client_start();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_client_start: %s", esp_err_to_name(err));
             return ESP_FAIL;
         }
 
         if (DEVICE_TOKEN != NULL) {
+
+            err = coap_set_device_token(DEVICE_TOKEN);
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "Error en coap_client_attributes_observe: %s", esp_err_to_name(err));
+                return ESP_FAIL;
+            }
             return esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
         }
 
@@ -261,7 +278,7 @@ esp_err_t thingsboard_telemetry_send(char *msg) {
     }
 
     #if CONFIG_USE_COAP
-        return coap_client_telemetry_send(msg, DEVICE_TOKEN);
+        return coap_client_telemetry_send(msg);
     #elif CONFIG_USE_MQTT
         return mqtt_send("v1/devices/me/telemetry", msg, 0);
 
