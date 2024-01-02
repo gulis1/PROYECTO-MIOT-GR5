@@ -13,20 +13,24 @@
 
 const char *TAG = "thingsboard";
 
+static char *NVS_DEVICE_TOKEN_KEY = "device_token";
 static char *DEVICE_TOKEN = NULL;
 static nvs_handle_t nvshandle;
 
 ESP_EVENT_DEFINE_BASE(THINGSBOARD_EVENT);
 
+extern const uint8_t cert_pem_start[] asm("_binary_cert_pem_start");
+extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
+
 
 cJSON* generate_provision_json() {
     cJSON *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
     cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
     cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
     
     return json;
 }
+
 
 esp_err_t parse_received_device_token(char* response, int response_len) {
 
@@ -43,6 +47,15 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
         return ESP_FAIL;
     }
     
+    esp_err_t err = nvs_set_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en nvs_set_str: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    ESP_LOGI(TAG, "Saved received provision token in NVS");
+    nvs_close(nvshandle);
+
     cJSON_free(response_json);
     return ESP_OK;
 }
@@ -52,10 +65,11 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
 void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 void restart_mqtt_client() {
+    
     ESP_LOGI(TAG, "Reiniciando cliente MQTT...");
     vTaskDelay(2000 / portMAX_DELAY);
     ESP_ERROR_CHECK(mqtt_deinit());
-    ESP_ERROR_CHECK(mqtt_init(mqtt_handler, DEVICE_TOKEN));
+    ESP_ERROR_CHECK(mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start));
     ESP_ERROR_CHECK(mqtt_start());
     vTaskDelete(NULL);
 }
@@ -74,11 +88,7 @@ void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 
             
                 ESP_LOGI(TAG, "Suscrito al topic de provisionamiento");
-                cJSON *json = cJSON_CreateObject();
-                cJSON_AddStringToObject(json, "deviceName", CONFIG_THINGSBOARD_DEVICE_NAME);
-                cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
-                cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
-
+                cJSON *json = generate_provision_json();
                 char *json_payload = cJSON_PrintUnformatted(json);
 
                 vTaskDelay(2000 / portTICK_PERIOD_MS); // TODO: revisar esta chapuza.
@@ -163,22 +173,43 @@ static coap_response_t coap_handler(coap_session_t *session,
 esp_err_t thingsboard_init(void *handler) {
 
     esp_err_t err;
+    size_t len;
+
     err = esp_event_handler_register(THINGSBOARD_EVENT, ESP_EVENT_ANY_ID, handler, NULL);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_event_handler_register: %s", esp_err_to_name(err));
         return err;
     }
 
+    err = nvs_open("nvs", NVS_READWRITE, &nvshandle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en nvs_open: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, NULL, &len);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "Thingsboard token found in NVS");
+        DEVICE_TOKEN = malloc(len);
+        nvs_get_str(nvshandle, NVS_DEVICE_TOKEN_KEY, DEVICE_TOKEN, &len);
+        nvs_close(nvshandle);
+    }
+
+    else if (err != ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGE(TAG, "Error en nvs_get_str(): %s", esp_err_to_name(err));
+        return err;
+    }
+
     #if CONFIG_USE_COAP
-        err = coap_client_init(coap_handler, DEVICE_TOKEN);
+        err = coap_client_init(coap_handler, cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_server_init: %s", esp_err_to_name(err));
             return err;
         }
     #elif CONFIG_USE_MQTT
         // Iniciación MQTT. Se le pasa el handler de los eventos
-        // MQTT para que se registre. 
-        err = mqtt_init(mqtt_handler, DEVICE_TOKEN);
+        // MQTT para que se registre.
+        err = mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));
             return err;
@@ -194,31 +225,21 @@ esp_err_t thingsboard_init(void *handler) {
 esp_err_t thingsboard_start() {
 
     esp_err_t err;
-    size_t len;
-
-    err = nvs_open("nvs", NVS_READWRITE, &nvshandle);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en nvs_open: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    err = nvs_get_str(nvshandle, "thingsboard_device_token", NULL, &len);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Thingsboard token found in NVS");
-        DEVICE_TOKEN = malloc(len);
-        nvs_get_str(nvshandle, "thingsboard_device_token", DEVICE_TOKEN, &len);
-        nvs_close(nvshandle);
-    }
-
-    else if (err != ESP_ERR_NVS_NOT_FOUND) {
-        ESP_LOGE(TAG, "Error en nvs_get_str(): %s", esp_err_to_name(err));
-        return err;
-    }
 
     #if CONFIG_USE_MQTT
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        if (DEVICE_TOKEN == NULL) {
+        err = coap_client_start();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en coap_client_start: %s", esp_err_to_name(err));
+            return ESP_FAIL;
+        }
+
+        if (DEVICE_TOKEN != NULL) {
+            return esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+        }
+
+        else {
             cJSON *provision_json = generate_provision_json();
             char *provision_payload = cJSON_PrintUnformatted(provision_json);
             err = coap_client_provision_send(provision_payload);
@@ -227,7 +248,6 @@ esp_err_t thingsboard_start() {
             return err;
         }
 
-        else return ESP_OK;
     #else
         return ESP_FAIL;
     #endif

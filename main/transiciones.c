@@ -32,6 +32,7 @@ estado_t trans_estado_inicial(transicion_t trans) {
         case TRANS_PROVISION:
 
             prov_info_t *prov = (prov_info_t*) trans.dato;
+            
             ESP_ERROR_CHECK(wifi_connect(prov->wifi_ssid, prov->wifi_pass));
 
             return ESTADO_PROVISIONADO;
@@ -111,7 +112,6 @@ estado_t trans_estado_calibrado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
-
 
             char json_buffer[128];
             data_sensores_t *lecturas = trans.dato;

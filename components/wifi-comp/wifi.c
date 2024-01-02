@@ -149,6 +149,7 @@ esp_err_t wifi_connect(char *ssid, char *password) {
     strcpy((char*) wifi_config.sta.ssid, ssid);
     strcpy((char*) wifi_config.sta.password, password);
 
+    ESP_LOGI(TAG, "Connecting to wifi %s", ssid);
     ESP_LOGI(TAG, "Connecting to wifi %s with password %s", wifi_config.sta.ssid, wifi_config.sta.password);
     err = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     if (err != ESP_OK) {

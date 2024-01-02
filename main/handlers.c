@@ -144,13 +144,13 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
     }
 }
 
-/////////////////////////////////////////////
-// este es el handler de los sensores
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
     transicion_t trans;
+
     switch (event_id) {
         case SENSORES_ENVIAN_DATO:
+
             data_sensores_t *info_data_sensores_a_pasar = *((data_sensores_t**)event_data);
             trans.tipo = TRANS_LECTURA_SENSORES;
             trans.dato = info_data_sensores_a_pasar;
@@ -158,22 +158,16 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
             break;
 
         case CALIBRACION_REALIZADA:
+
             trans.tipo = TRANS_CALIBRACION_REALIZADA;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
-        // case PASAR_A_DORMIR_2:
-        //     trans.tipo = TRANS_DORMIR;
-        //     ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR_2");
-        //     xQueueSend(fsm_queue, &trans, portMAX_DELAY);
-        //     break;
 
         default:
             ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
     }
 }
 
-
-//Este es el handler de la Hora
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
 
         transicion_t trans;
@@ -188,8 +182,6 @@ void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
-
-//este es el handler del deep_sleep
 void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
     transicion_t trans;
         switch (event_id) {

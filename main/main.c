@@ -24,7 +24,6 @@ void main_task() {
         ESP_LOGE(TAG, "Provisonment failed.");
         return;
     }
-
     while (true) {
         
         transicion_t transicion;
