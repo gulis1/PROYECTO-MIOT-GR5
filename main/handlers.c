@@ -40,7 +40,6 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 
-#include <i2c_config.h>
 
 #include "esp_pm.h"
 

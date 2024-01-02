@@ -39,7 +39,7 @@ static coap_optlist_t *optlist_telemetry = NULL;
 static void coap_io_callback() {
 
     while (true) {
-        coap_io_process(coap_ctx, CONFIG_COAP_WAIT_MS);
+        coap_io_process(coap_ctx, 1000);
     }
 }
 
@@ -124,7 +124,7 @@ esp_err_t coap_client_init(void *message_handler, char *cert) {
 
     coap_context_set_keepalive(coap_ctx, 100);
 
-    // coap_context_set_block_mode(coap_ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY);
+    coap_context_set_block_mode(coap_ctx, COAP_BLOCK_USE_LIBCOAP | COAP_BLOCK_SINGLE_BODY);
     coap_register_response_handler(coap_ctx, message_handler);
 
     xTaskCreate(coap_io_callback, "COAP io task", 6144, NULL, 6, NULL);

@@ -19,8 +19,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
-// #include "nvs.h"
-// #include "nvs_flash.h"
+
 
 #include "esp_bt.h"
 #include "esp_gap_ble_api.h"
@@ -347,20 +346,13 @@ int comparar_mac(struct direccion_mac *mac1, struct direccion_mac *mac2){
 void anadir_mac(struct direccion_mac *nueva_mac){
     for (int i=0; i < mac_count;i++){
         if (comparar_mac(&lista_mac[i],nueva_mac)){
-            //ESP_LOGI("PRUEBAS_BLUETOOTH", "EL DISPOSITIVO YA ESTA ESCANEADO");
             return;
         }
     }
 
-    //aqui agregar que la rsi sea mayor a tal
-    //if (mac_count<MAX_MACS){
         if (nueva_mac->intensidad>=-88){
             lista_mac[mac_count++]=*nueva_mac;
-            //mac_count++;
-            //ESP_LOGI("PRUEBAS_BLUETOOTH", "LA INTENSIDAD ES MAYOR -88 ENTRAS");
-    //}else{
-    //    ESP_LOGI("PRUEBAS_BLUETOOTH", "YA HAY DEMASIADAS EN LA LISTA");
-    //}
+    
     }
 }
 
@@ -373,7 +365,7 @@ void parsear_y_añadir_mac(uint8_t *mac_str, int mac_intensidad){
     anadir_mac(&nueva_mac);
 
 }
-/////////
+
 
 static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {

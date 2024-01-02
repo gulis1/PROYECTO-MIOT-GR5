@@ -76,11 +76,6 @@ void hora(void){
     mitiempo_en_horas=miTiempo->tm_hour;
     
     
-
-    // ESP_LOGI("mirando la hora", "hora %d",mitiempo_en_horas);
-    // ESP_LOGI("mirando los minutos", "minutos %d",mitiempo_en_minutos);
-    // ESP_LOGI("mirando los segundo", "segundos %d",mitiempo_en_segundos);
-
     strftime(hora_actual, 80, "%Y-%m-%d %H:%M:%S", miTiempo); // Formatear la fecha y hora
     strcpy(strftime_buf, hora_actual);
     ESP_LOGI("Status_hora","La hora es %s",strftime_buf);
@@ -90,7 +85,7 @@ void hora(void){
     momento_dormido=segundos_actuales;
 
     // CASE FINAL>INICIAL OJO
-    if (traspaso!=1){ //Esto permite que al momento de encender reiniciar como la hora no esta sincronizada la sincronice nuevamente.
+    if (traspaso!=1){ //Esto permite que al momento de encender/reiniciar como la hora no esta sincronizada la sincronice nuevamente.
         ESP_LOGI("Inicializacion en proceso","configurando");
     } else{
         if (segundos_actuales>segundos_finales){//((mitiempo_en_horas>HORA_FINAL || mitiempo_en_minutos>MINUTO_FINAL|| mitiempo_en_segundos> SEGUNDO_FINAL)){
@@ -160,7 +155,7 @@ esp_err_t deep_sleep(){
 }
 
 esp_err_t comienza_reloj(){
-    //  ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_2, 1 * 1000000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_2, 1 * 1000000));
     return ESP_OK;
 }
 
@@ -176,17 +171,9 @@ esp_err_t power_manager_init(){
         .light_sleep_enable=true
     };
 
-    // esp_err_t ret = esp_pm_configure(&power_config);
-    // if (ret != ESP_OK) {
-    //     ESP_LOGE("Power Manager", "init power manager falló: %s", esp_err_to_name(ret));
-    //     return ret;
-    // }
 
     ESP_LOGI("Power Manager", "Init correcto");
     return ESP_OK;
 }
-
-//TODOANGEL:PUEDEDARSE EL CASO DE QUE QUERAMOS QUE TRABASE DE MADRUGADA YO CREO QUE NO 
-//TODOANGEL: Puede pasarse el esp_err_t err a global
 
 

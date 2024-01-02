@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 #include "SGP30.h"
-#include <sensores.h>
-#include "si7021.h" //creo que se puede borrar 
-#include <i2c_config.h>
+#include "sensores.h"
+#include "si7021.h"
 #include <driver/i2c.h>
 #include <esp_event.h>
 #include <esp_timer.h>
@@ -56,7 +55,7 @@ static void lectura_sensores_callback(){
     void *dato_sensores =&DATA_SENSORES;
 
     //Envio post
-    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root);
+    ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root); parece no hizo falta porque el json lo estruturamos de forma manual
 }
 
 esp_err_t sensores_init(void *sensores_handler) {
@@ -106,12 +105,12 @@ void calibracion() {
 
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, CALIBRACION_REALIZADA, NULL, 0, portMAX_DELAY));
 
-    // TODO: guradar valores calibracion en la flash 
+    // TODO: guradar valores calibracion en la flash ¿PODRIA POR TEMA DE TEMP?
     vTaskDelete(NULL);
 }
 
 esp_err_t start_calibracion(){
-     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaraciom 
+     // SGP30 needs to be read every 1s and sends TVOC = 400 14 times when initializing //componente task calibaracion
     xTaskCreate(calibracion, "Tarea calibracion", 4096, NULL, 5, NULL);
     return ESP_OK;
 }

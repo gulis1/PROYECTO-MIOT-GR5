@@ -1,17 +1,7 @@
-/**
- * @file main.c
- * 
- * @author Renato Freitas
- * 
- * @brief SGP30 Air Quality Sensor Library Example
-*/
-
 #include <stdio.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "sdkconfig.h"
-
-
 
 #include "SGP30.h"
 
