@@ -4,6 +4,7 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <cJSON.h>
+#include <esp_ota_ops.h>
 
 #ifdef CONFIG_USE_COAP
     #include <lwip/sockets.h>
@@ -15,7 +16,8 @@
 
 #include "thingsboard.h"
 
-const char *TAG = "thingsboard";
+const static char *VERSION_TMP = "0.1.0";
+const static char *TAG = "thingsboard";
 
 static char *NVS_DEVICE_TOKEN_KEY = "device_token";
 static char *DEVICE_TOKEN = NULL;
@@ -27,7 +29,7 @@ extern const uint8_t cert_pem_start[] asm("_binary_cert_pem_start");
 extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
 
 
-cJSON* generate_provision_json() {
+static cJSON* generate_provision_json() {
     cJSON *json = cJSON_CreateObject();
     cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
     cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
@@ -35,7 +37,7 @@ cJSON* generate_provision_json() {
     return json;
 }
 
-esp_err_t parse_received_device_token(char* response, int response_len) {
+static esp_err_t parse_received_device_token(char* response, int response_len) {
 
     cJSON *response_json = cJSON_ParseWithLength(response, response_len);
     cJSON *token_object = cJSON_GetObjectItem(response_json, "credentialsValue");
@@ -60,6 +62,29 @@ esp_err_t parse_received_device_token(char* response, int response_len) {
     nvs_close(nvshandle);
 
     cJSON_free(response_json);
+    return ESP_OK;
+}
+
+static esp_err_t parse_attributes(const unsigned char *received, int len) {
+    
+    cJSON *json = cJSON_ParseWithLength((const char*)received, len);
+    if (json == NULL) {
+        ESP_LOGE(TAG, "Error al parsear el JSON con los atributos.");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // Comprobamos actualizaciones de firmware.
+    cJSON *fw_version_json = cJSON_GetObjectItem(json, "fw_version");
+    if (fw_version_json != NULL) {
+        
+        char *fw_version = cJSON_GetStringValue(fw_version_json);
+        ESP_LOGI(TAG, "Received firmware version: %s", fw_version);
+        if (strcmp(fw_version, "0.1.0") != 0) {
+            ESP_LOGI(TAG, "Actualizacion recibida");
+        }
+    }
+
+    cJSON_Delete(json);
     return ESP_OK;
 }
 
@@ -148,6 +173,8 @@ static coap_response_t coap_handler(coap_session_t *session,
                 return COAP_RESPONSE_OK;
             }
 
+            ESP_LOGI(TAG, "Received COAP message:\n%.*s\n", (int)data_len, data);
+
             if (DEVICE_TOKEN == NULL) {
                 // Provisionamiento recibido.
                 if (parse_received_device_token((char*) data, data_len) != ESP_OK) {
@@ -164,10 +191,9 @@ static coap_response_t coap_handler(coap_session_t *session,
             }
 
             else {
-                
+                parse_attributes(data, data_len);
             }
 
-            ESP_LOGI(TAG, "Received COAP message:\n%.*s\n", (int)data_len, data);
         }
         return COAP_RESPONSE_OK;
     }
