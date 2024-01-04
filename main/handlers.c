@@ -22,8 +22,8 @@
 #include "provision.h"
 #include "sensores.h"
 #include "thingsboard.h" 
-#include "sueno_profundo.h"
-#include "configuracion_hora.h"
+#include "power_mngr.h"
+#include "sntp_client.h"
 
 
 // Cola de transiciones para la máquina de estados.
@@ -107,6 +107,11 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
 
+        case THINGSBOARD_FW_UPDATE_READY:
+            trans.tipo = TRANS_THINGSBOARD_FW_UPDATE;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
         default:
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
     }
@@ -150,9 +155,10 @@ void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
-void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    
     transicion_t trans;
-        switch (event_id) {
+    switch (event_id) {
         case PASAR_A_DORMIR:
             trans.tipo = TRANS_DORMIR;
             ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR");

@@ -444,7 +444,6 @@ esp_err_t coap_client_fw_download(unsigned char *pdu_token, int chunk, int chunk
     }
 
     sprintf(buff, "fw/%s", DEVICE_TOKEN);
-    ESP_LOGI(TAG, "COAP fiwmare update URI: %s", buff);
     if (coap_add_option(request, COAP_OPTION_URI_PATH, strlen(buff), (u_char*) buff) == 0) {
         ESP_LOGE(TAG, "Error en coap add option");
         return ESP_FAIL;

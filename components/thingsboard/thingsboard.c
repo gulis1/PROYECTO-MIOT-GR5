@@ -34,8 +34,6 @@ uint8_t COAP_TOKEN_FW_UPDATE[8] = {0};
 uint8_t COAP_TOKEN_PROVISION[8] = {0};
 #endif
 
-
-
 /*
     COSAS OTA
 */
@@ -44,11 +42,26 @@ const static uint32_t FW_UPDATE_CHUNK_SIZE = 1024;
 static uint32_t fw_chunks_downloaded = 0;
 static uint32_t fw_total_chunks = 0;
 
+static void fw_update_send_state(char *state) {
+
+    // Se indica a thingsboard que se está descargando la actualización.
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "fw_state", state);
+    char *payload = cJSON_PrintUnformatted(json);
+    thingsboard_telemetry_send(payload);
+
+    cJSON_free(json);
+    cJSON_free(payload);
+}
+
 static esp_err_t fw_update_begin(int fw_size) {
 
     ESP_LOGI(TAG, "Iniciando actualizacion. Nueva versión: %d bytes", fw_size);
     fw_chunks_downloaded = 0;
     fw_total_chunks = (int) ceil((double) fw_size / (double) FW_UPDATE_CHUNK_SIZE);
+    
+    // Se indica a thingsboard que se está descargando la actualización.
+    fw_update_send_state("DOWNLOADING");
 
     #ifdef CONFIG_USE_COAP
         return coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, 0, FW_UPDATE_CHUNK_SIZE);
@@ -62,22 +75,46 @@ static esp_err_t fw_update_downloaded() {
     esp_err_t err;
 
     ESP_LOGI(TAG, "Actualizacion descargada.");
-    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
+    fw_update_send_state("DOWNLOADED");
 
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
     err = esp_ota_set_boot_partition(partition);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_ota_set_boot_partition");
         return err;
     }
-
-    esp_restart();
+    
+    fw_update_send_state("UPDATING");
+    esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_FW_UPDATE_READY, NULL, 0, portMAX_DELAY);
+    
     return ESP_OK;
+}
+
+static void fw_update_download_chunk(int chunk) {
+
+    esp_err_t err;
+
+    #ifdef CONFIG_USE_COAP
+        
+        // Probar varias veces a descargar
+        for (int i = 0; i < 5; i++) {
+            err = coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, chunk, FW_UPDATE_CHUNK_SIZE);
+            if (err == ESP_OK)
+                break;
+        }
+
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
+        }
+
+    #endif
 }
 
 /*
     COSAS PROVISION
 */
 static cJSON* generate_provision_json() {
+
     cJSON *json = cJSON_CreateObject();
     cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
     cJSON_AddStringToObject(json, "provisionDeviceSecret", CONFIG_THINGSBOARD_PROVISION_DEVICE_SECRET);
@@ -132,7 +169,7 @@ static esp_err_t parse_attributes(const unsigned char *received, int len) {
         
         char *fw_version = cJSON_GetStringValue(fw_version_json);
         int fw_size =  (int) cJSON_GetNumberValue(fw_version_size);
-        if (strcmp(fw_version, VERSION_TMP) != 0) {
+        if (strcmp(fw_version, CONFIG_APP_PROJECT_VER) != 0) {
             ESP_ERROR_CHECK(fw_update_begin(fw_size));
         }
         else
@@ -250,16 +287,14 @@ static coap_response_t coap_handler(coap_session_t *session,
                 fw_chunks_downloaded += 1;
                 ESP_LOGI(TAG, "Downloaded update chunk %lu/%lu", fw_chunks_downloaded, fw_total_chunks);
                 if (fw_chunks_downloaded < fw_total_chunks) {
-                    ESP_ERROR_CHECK(coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, fw_chunks_downloaded, FW_UPDATE_CHUNK_SIZE));
+                    fw_update_download_chunk(fw_chunks_downloaded);
                 }
                 else 
                     ESP_ERROR_CHECK(fw_update_downloaded());
-
             }
 
             else {
-                // Suponemos que se trata de un reporte de cambio
-                // en los atributos.
+                // Suponemos que se trata de un reporte de cambio en los atributos.
                 ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
                 parse_attributes(data, data_len);
             }
@@ -336,8 +371,7 @@ esp_err_t thingsboard_start() {
 
     esp_err_t err;
     const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
-    ESP_LOGI(TAG, "AAA partition: 0x%x", (int) partition->address);
-    ESP_LOGI(TAG, "AAA partition label: %s", partition->label);
+ 
     if (partition == NULL) {
         ESP_LOGE(TAG, "Error en esp_ota_get_next_update_partition");
         return ESP_FAIL;

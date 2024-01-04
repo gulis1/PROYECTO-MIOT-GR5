@@ -17,8 +17,8 @@
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-#include "configuracion_hora.h"
-#include "sueno_profundo.h"
+#include "sntp_client.h"
+#include "power_mngr.h"
 #include "thingsboard.h"
 
 const static char *TAG = "transiciones.c";
@@ -48,7 +48,7 @@ estado_t trans_estado_provisionado(transicion_t trans) {
 
         case TRANS_WIFI_READY:
             /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
-            ESP_ERROR_CHECK(start_time_sync());
+            ESP_ERROR_CHECK(time_sync_start());
             return ESTADO_CONECTADO;
             
         default:
@@ -95,6 +95,7 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
         case TRANS_CALIBRACION_REALIZADA:
             ESP_ERROR_CHECK(sensores_start());
+            ESP_ERROR_CHECK(power_manager_start());
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;
             
@@ -115,6 +116,14 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             thingsboard_telemetry_send(json_buffer);
             // ESP_LOGI(TAG, "%s", json_buffer);
             return ESTADO_CALIBRADO;
+
+        case TRANS_THINGSBOARD_FW_UPDATE:
+            esp_restart();
+            __unreachable();
+
+        case TRANS_DORMIR:
+            deep_sleep();
+            __unreachable();
 
         default:
             return ESTADO_CALIBRADO;

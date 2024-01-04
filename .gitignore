@@ -2,3 +2,4 @@
 sdkconfig*
 /managed_components
 *.pem
+/.vscode
