@@ -72,7 +72,6 @@ void app_main(void) {
 
     esp_err_t err;
 
-    
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -113,7 +112,6 @@ void app_main(void) {
     ESP_LOGE(TAG, "Error en sntp_init_hora: %s", esp_err_to_name(err));
         return;
     }
-
 
     err = init_register_timer_wakeup(sleep_timer_handler);
     if (err != ESP_OK) {

@@ -113,7 +113,7 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
             thingsboard_telemetry_send(json_buffer);
-            ESP_LOGI(TAG, "%s", json_buffer);
+            // ESP_LOGI(TAG, "%s", json_buffer);
             return ESTADO_CALIBRADO;
 
         default:

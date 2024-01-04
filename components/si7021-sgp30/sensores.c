@@ -46,7 +46,7 @@ static void lectura_sensores_callback(){
     float temp;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
-    ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
+    // ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;

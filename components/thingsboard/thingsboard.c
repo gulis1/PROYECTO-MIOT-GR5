@@ -5,6 +5,7 @@
 #include <nvs_flash.h>
 #include <cJSON.h>
 #include <esp_ota_ops.h>
+#include <math.h>
 
 #ifdef CONFIG_USE_COAP
     #include <lwip/sockets.h>
@@ -16,7 +17,7 @@
 
 #include "thingsboard.h"
 
-const static char *VERSION_TMP = "0.1.0";
+const static char *VERSION_TMP = "1.0.0";
 const static char *TAG = "thingsboard";
 
 static char *NVS_DEVICE_TOKEN_KEY = "device_token";
@@ -28,7 +29,54 @@ ESP_EVENT_DEFINE_BASE(THINGSBOARD_EVENT);
 extern const uint8_t cert_pem_start[] asm("_binary_cert_pem_start");
 extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
 
+#ifdef CONFIG_USE_COAP
+uint8_t COAP_TOKEN_FW_UPDATE[8] = {0};
+uint8_t COAP_TOKEN_PROVISION[8] = {0};
+#endif
 
+
+
+/*
+    COSAS OTA
+*/
+esp_ota_handle_t ota_handle;
+const static uint32_t FW_UPDATE_CHUNK_SIZE = 1024;
+static uint32_t fw_chunks_downloaded = 0;
+static uint32_t fw_total_chunks = 0;
+
+static esp_err_t fw_update_begin(int fw_size) {
+
+    ESP_LOGI(TAG, "Iniciando actualizacion. Nueva versión: %d bytes", fw_size);
+    fw_chunks_downloaded = 0;
+    fw_total_chunks = (int) ceil((double) fw_size / (double) FW_UPDATE_CHUNK_SIZE);
+
+    #ifdef CONFIG_USE_COAP
+        return coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, 0, FW_UPDATE_CHUNK_SIZE);
+    #endif
+
+    return ESP_OK;
+}
+
+static esp_err_t fw_update_downloaded() {
+
+    esp_err_t err;
+
+    ESP_LOGI(TAG, "Actualizacion descargada.");
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
+
+    err = esp_ota_set_boot_partition(partition);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en esp_ota_set_boot_partition");
+        return err;
+    }
+
+    esp_restart();
+    return ESP_OK;
+}
+
+/*
+    COSAS PROVISION
+*/
 static cJSON* generate_provision_json() {
     cJSON *json = cJSON_CreateObject();
     cJSON_AddStringToObject(json, "provisionDeviceKey", CONFIG_THINGSBOARD_PROVISION_DEVICE_KEY);
@@ -65,6 +113,10 @@ static esp_err_t parse_received_device_token(char* response, int response_len) {
     return ESP_OK;
 }
 
+
+/*
+    COSAS ATRIBUTOS
+*/
 static esp_err_t parse_attributes(const unsigned char *received, int len) {
     
     cJSON *json = cJSON_ParseWithLength((const char*)received, len);
@@ -75,18 +127,22 @@ static esp_err_t parse_attributes(const unsigned char *received, int len) {
 
     // Comprobamos actualizaciones de firmware.
     cJSON *fw_version_json = cJSON_GetObjectItem(json, "fw_version");
-    if (fw_version_json != NULL) {
+    cJSON *fw_version_size = cJSON_GetObjectItem(json, "fw_size");
+    if (fw_version_json != NULL && fw_version_size != NULL) {
         
         char *fw_version = cJSON_GetStringValue(fw_version_json);
-        ESP_LOGI(TAG, "Received firmware version: %s", fw_version);
-        if (strcmp(fw_version, "0.1.0") != 0) {
-            ESP_LOGI(TAG, "Actualizacion recibida");
+        int fw_size =  (int) cJSON_GetNumberValue(fw_version_size);
+        if (strcmp(fw_version, VERSION_TMP) != 0) {
+            ESP_ERROR_CHECK(fw_update_begin(fw_size));
         }
+        else
+            ESP_LOGI(TAG, "La versión del firmware es la más actual.");
     }
-
+    
     cJSON_Delete(json);
     return ESP_OK;
 }
+
 
 #ifdef CONFIG_USE_MQTT
 
@@ -167,30 +223,44 @@ static coap_response_t coap_handler(coap_session_t *session,
     if (COAP_RESPONSE_CLASS(rcvd_code) == 2) {
 
         if (coap_get_data_large(received, &data_len, &data, &offset, &total)) {
+            
             if (data_len != total) {
                 ESP_LOGE(TAG, "Incomplete message received.");
                 esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
                 return COAP_RESPONSE_OK;
             }
 
-            ESP_LOGI(TAG, "Received COAP message:\n%.*s\n", (int)data_len, data);
+            coap_bin_const_t token = coap_pdu_get_token(received);
+            if (memcmp(token.s, COAP_TOKEN_PROVISION, token.length) == 0) {
 
-            if (DEVICE_TOKEN == NULL) {
-                // Provisionamiento recibido.
-                if (parse_received_device_token((char*) data, data_len) != ESP_OK) {
+                if (parse_received_device_token((char*) data, data_len) != ESP_OK)
                     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
-                    return COAP_RESPONSE_OK;
+                else {
+                    ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
+                    if (coap_set_device_token(DEVICE_TOKEN) != ESP_OK)
+                        ESP_LOGE(TAG, "Error en coap_set_device_token");
+                    else 
+                        esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+                }    
+            }
+
+            else if (memcmp(token.s, COAP_TOKEN_FW_UPDATE, token.length) == 0) {
+
+                ESP_ERROR_CHECK(esp_ota_write_with_offset(ota_handle, data, data_len, FW_UPDATE_CHUNK_SIZE * fw_chunks_downloaded));
+                fw_chunks_downloaded += 1;
+                ESP_LOGI(TAG, "Downloaded update chunk %lu/%lu", fw_chunks_downloaded, fw_total_chunks);
+                if (fw_chunks_downloaded < fw_total_chunks) {
+                    ESP_ERROR_CHECK(coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, fw_chunks_downloaded, FW_UPDATE_CHUNK_SIZE));
                 }
-
-                ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
-
-                if (coap_set_device_token(DEVICE_TOKEN) != ESP_OK)
-                    ESP_LOGE(TAG, "Error en coap_set_device_token");
                 else 
-                    esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
+                    ESP_ERROR_CHECK(fw_update_downloaded());
+
             }
 
             else {
+                // Suponemos que se trata de un reporte de cambio
+                // en los atributos.
+                ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
                 parse_attributes(data, data_len);
             }
 
@@ -212,6 +282,8 @@ esp_err_t thingsboard_init(void *handler) {
 
     esp_err_t err;
     size_t len;
+
+    ESP_LOGI(TAG, "Version actual del firmware: %s", VERSION_TMP);
 
     err = esp_event_handler_register(THINGSBOARD_EVENT, ESP_EVENT_ANY_ID, handler, NULL);
     if (err != ESP_OK) {
@@ -262,11 +334,25 @@ esp_err_t thingsboard_init(void *handler) {
 
 esp_err_t thingsboard_start() {
 
+    esp_err_t err;
+    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
+    ESP_LOGI(TAG, "AAA partition: 0x%x", (int) partition->address);
+    ESP_LOGI(TAG, "AAA partition label: %s", partition->label);
+    if (partition == NULL) {
+        ESP_LOGE(TAG, "Error en esp_ota_get_next_update_partition");
+        return ESP_FAIL;
+    }
+    
+    err = esp_ota_begin(partition, OTA_SIZE_UNKNOWN, &ota_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en esp_ota_begin");
+        return err;
+    }
 
     #if CONFIG_USE_MQTT
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        esp_err_t err = coap_client_start();
+        err = coap_client_start();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_client_start: %s", esp_err_to_name(err));
             return ESP_FAIL;
@@ -285,7 +371,8 @@ esp_err_t thingsboard_start() {
         else {
             cJSON *provision_json = generate_provision_json();
             char *provision_payload = cJSON_PrintUnformatted(provision_json);
-            err = coap_client_provision_send(provision_payload);
+            err = coap_client_provision_post(provision_payload, (uint8_t*) &COAP_TOKEN_PROVISION);
+    
             free(provision_json);
             free(provision_payload);
             return err;
@@ -304,7 +391,7 @@ esp_err_t thingsboard_telemetry_send(char *msg) {
     }
 
     #if CONFIG_USE_COAP
-        return coap_client_telemetry_send(msg);
+        return coap_client_telemetry_post(msg);
     #elif CONFIG_USE_MQTT
         return mqtt_send("v1/devices/me/telemetry", msg, 0);
 
