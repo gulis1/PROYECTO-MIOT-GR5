@@ -17,7 +17,6 @@
 
 #include "thingsboard.h"
 
-const static char *VERSION_TMP = "1.0.0";
 const static char *TAG = "thingsboard";
 
 static char *NVS_DEVICE_TOKEN_KEY = "device_token";
@@ -54,6 +53,28 @@ static void fw_update_send_state(char *state) {
     cJSON_free(payload);
 }
 
+static void fw_update_download_chunk(int chunk) {
+
+    esp_err_t err;
+
+    #ifdef CONFIG_USE_COAP
+        
+        // Probar varias veces a descargar
+        for (int i = 0; i < 5; i++) {
+            err = coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, chunk, FW_UPDATE_CHUNK_SIZE);
+            if (err == ESP_OK)
+                break;
+        }
+
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
+        }
+
+    #else
+        ESP_LOGW(TAG, "OTA no implementado por MQTT todavia.");
+    #endif
+}
+
 static esp_err_t fw_update_begin(int fw_size) {
 
     ESP_LOGI(TAG, "Iniciando actualizacion. Nueva versión: %d bytes", fw_size);
@@ -62,10 +83,7 @@ static esp_err_t fw_update_begin(int fw_size) {
     
     // Se indica a thingsboard que se está descargando la actualización.
     fw_update_send_state("DOWNLOADING");
-
-    #ifdef CONFIG_USE_COAP
-        return coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, 0, FW_UPDATE_CHUNK_SIZE);
-    #endif
+    fw_update_download_chunk(0);
 
     return ESP_OK;
 }
@@ -88,26 +106,6 @@ static esp_err_t fw_update_downloaded() {
     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_FW_UPDATE_READY, NULL, 0, portMAX_DELAY);
     
     return ESP_OK;
-}
-
-static void fw_update_download_chunk(int chunk) {
-
-    esp_err_t err;
-
-    #ifdef CONFIG_USE_COAP
-        
-        // Probar varias veces a descargar
-        for (int i = 0; i < 5; i++) {
-            err = coap_client_fw_download((uint8_t*) &COAP_TOKEN_FW_UPDATE, chunk, FW_UPDATE_CHUNK_SIZE);
-            if (err == ESP_OK)
-                break;
-        }
-
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
-        }
-
-    #endif
 }
 
 /*
@@ -154,14 +152,8 @@ static esp_err_t parse_received_device_token(char* response, int response_len) {
 /*
     COSAS ATRIBUTOS
 */
-static esp_err_t parse_attributes(const unsigned char *received, int len) {
+static esp_err_t parse_attributes(cJSON *json) {
     
-    cJSON *json = cJSON_ParseWithLength((const char*)received, len);
-    if (json == NULL) {
-        ESP_LOGE(TAG, "Error al parsear el JSON con los atributos.");
-        return ESP_ERR_INVALID_ARG;
-    }
-
     // Comprobamos actualizaciones de firmware.
     cJSON *fw_version_json = cJSON_GetObjectItem(json, "fw_version");
     cJSON *fw_version_size = cJSON_GetObjectItem(json, "fw_size");
@@ -176,7 +168,9 @@ static esp_err_t parse_attributes(const unsigned char *received, int len) {
             ESP_LOGI(TAG, "La versión del firmware es la más actual.");
     }
     
-    cJSON_Delete(json);
+    // Al recibir datos de thingsboard marcmos la actualización como válida.
+    esp_ota_mark_app_valid_cancel_rollback();
+
     return ESP_OK;
 }
 
@@ -197,6 +191,7 @@ static void restart_mqtt_client() {
 
 static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
 
+    esp_mqtt_event_handle_t mqtt_event = event_data;
     switch (event_id) {
 
         case MQTT_EVENT_CONNECTED:
@@ -221,6 +216,7 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
             }
             else {
                 // Si ya estamos, enviamos el evento de ready directamente.
+                mqtt_subscribe("v1/devices/me/attributes");
                 esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
             }
             break;
@@ -231,14 +227,38 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
             break;
 
         case MQTT_EVENT_DATA:
-
-            esp_mqtt_event_handle_t mqtt_event = event_data;
+            ESP_LOGI(TAG, "Recibido mensaje MQTT:\n%.*s\n", mqtt_event->data_len, mqtt_event->data);
+            ESP_LOGI(TAG, "Topic MQTT:\n%.*s\n", mqtt_event->topic_len, mqtt_event->topic);
+            
             if (strncmp(mqtt_event->topic, "/provision/response", mqtt_event->topic_len) == 0) {  
                 ESP_ERROR_CHECK(parse_received_device_token(mqtt_event->data, mqtt_event->data_len));
                 ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
                 xTaskCreate(restart_mqtt_client, "Restart mqtt client", 2048, NULL, 8, NULL);
             }
+
+            else if (strncmp(mqtt_event->topic, "v1/devices/me/attributes", mqtt_event->topic_len) == 0
+                    || strncmp(mqtt_event->topic, "v1/devices/me/attributes/response", 32) == 0)
+
+            {
+                // Hay que sacar el campo shared de aqui.
+                cJSON *json = cJSON_ParseWithLength(mqtt_event->data, mqtt_event->data_len);
+                if (json == NULL) {
+                    ESP_LOGE(TAG, "Error al parsear JSON recibido");
+                    return;
+                }
+                cJSON *shared = cJSON_GetObjectItem(json, "shared");
+                if (shared != NULL)
+                    parse_attributes(shared);
+
+                cJSON_free(json);
             
+            }
+
+            break;
+        case MQTT_EVENT_SUBSCRIBED:
+            mqtt_send("v1/devices/me/attributes/request/1", "{}", 0);
+
+            ESP_LOGI(TAG, "Suscrito a topic MQTT:\n%.*s\n", mqtt_event->topic_len, mqtt_event->topic);
             break;
     }
 }
@@ -294,9 +314,17 @@ static coap_response_t coap_handler(coap_session_t *session,
             }
 
             else {
+
+                cJSON *json = cJSON_ParseWithLength((const char*)received, len);
+                if (json == NULL) {
+                    ESP_LOGE(TAG, "Error al parsear JSON recibido.");
+                    return COAP_RESPONSE_OK;
+                }
+
                 // Suponemos que se trata de un reporte de cambio en los atributos.
                 ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
                 parse_attributes(data, data_len);
+                cJSON_free(json);
             }
 
         }
@@ -318,7 +346,7 @@ esp_err_t thingsboard_init(void *handler) {
     esp_err_t err;
     size_t len;
 
-    ESP_LOGI(TAG, "Version actual del firmware: %s", VERSION_TMP);
+    ESP_LOGI(TAG, "Version actual del firmware: %s", CONFIG_APP_PROJECT_VER);
 
     err = esp_event_handler_register(THINGSBOARD_EVENT, ESP_EVENT_ANY_ID, handler, NULL);
     if (err != ESP_OK) {
