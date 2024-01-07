@@ -13,5 +13,6 @@ esp_err_t thingsboard_init(void *eventhandler);
 esp_err_t thingsboard_start();
 esp_err_t thingsboard_stop();
 esp_err_t thingsboard_telemetry_send(char *msg);
+esp_err_t coap_set_device_token(char *device_token);
 
 #endif

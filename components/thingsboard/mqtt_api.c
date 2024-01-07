@@ -5,6 +5,9 @@
 
 #include "mqtt_api.h"
 
+
+#ifdef CONFIG_USE_MQTT
+
 const static char *TAG = "MQTT";
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
@@ -87,3 +90,5 @@ esp_err_t mqtt_subscribe(char *topic) {
 esp_err_t mqtt_unsubscribe(char *topic) {
     return esp_mqtt_client_unsubscribe(mqtt_client, topic) != -1 ? ESP_OK : ESP_FAIL;
 }
+
+#endif

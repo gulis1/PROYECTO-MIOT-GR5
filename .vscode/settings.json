@@ -10,7 +10,10 @@
     "string": "c",
     "string_view": "c",
     "mqtt_client.h": "c",
-    "esp_timer.h": "c"
+    "esp_timer.h": "c",
+    "coap.h": "c",
+    "mqtt_api.h": "c",
+    "thingsboard.h": "c"
   },
   "idf.portWin": "COM4"
 }
