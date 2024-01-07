@@ -144,7 +144,6 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
 }
 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-
     transicion_t trans;
 
     switch (event_id) {
@@ -159,6 +158,7 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
         case CALIBRACION_REALIZADA:
 
             trans.tipo = TRANS_CALIBRACION_REALIZADA;
+
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
 
@@ -166,6 +166,29 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
             ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
     }
 }
+
+
+//este es el handler de bluetooth
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    transicion_t trans;
+    
+    switch (event_id){
+        
+        case BLUETOOTH_ENVIA_DATO:
+        
+        data_aforo_t *info_data_aforo_a_pasar =  ((data_aforo_t*)event_data);
+        trans.tipo= TRANS_LECTURA_BLUETOOTH; 
+        trans.dato= info_data_aforo_a_pasar->cantidad_aforo;
+        xQueueSend(fsm_queue,&trans, portMAX_DELAY);
+        break;
+        
+    default:
+        ESP_LOGI("BLUETOOTH_HANDLER", "Evento desconocido.");
+        break;
+    }
+}
+
+
 
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
 
@@ -195,17 +218,4 @@ void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, i
 }
 
 
-//este es el handler de bluetooth
-void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
-    transicion_t trans;
-    switch (event_id){
-        case ESTIMACION_AFORO:
-        trans.tipo= TRANS_CALIBRACION_REALIZADA; // PARA QUE EN LAS TRANSCICION EMPIECE JUNTO A LA LACTURA DE SENSORES
-        ESP_LOGI("BLUETOOTH_HANDLER","TRANSCICION PARA ESTIMAR AFORO");
-        xQueueSend(fsm_queue,&trans, portMAX_DELAY);
-        break;
-    default:
-        ESP_LOGI("BLUETOOTH_HANDLER", "Evento desconocido.");
-        break;
-    }
-}
+

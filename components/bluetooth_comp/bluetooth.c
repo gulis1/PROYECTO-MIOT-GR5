@@ -35,8 +35,9 @@
 
 #include "main.h"
 #include "bluetooth.h"
+#include "sensores.h"
 
-#define GATTC_TAG "GATTC_DEMO"
+#define GATTC_TAG "BLUETOOTH"//"GATTC_DEMO"
 #define REMOTE_SERVICE_UUID        0x00FF
 #define REMOTE_NOTIFY_CHAR_UUID    0xFF01
 #define PROFILE_NUM      1
@@ -46,14 +47,14 @@
 #define MAX_MACS 100
 
 
-static const char remote_device_name[] = "ESP_GATTS_DEMO";
+//static const char remote_device_name[] = "ESP_GATTS_DEMO";
 static bool connect    = false;
 static bool get_server = false;
 static esp_gattc_char_elem_t *char_elem_result   = NULL;
 static esp_gattc_descr_elem_t *descr_elem_result = NULL;
 
 //Declaramos la familia de eventos
-ESP_EVENT_DEFINE_BASE(BLUETOOTH_CONFIG_EVENT);
+ESP_EVENT_DEFINE_BASE(BLUETOOTH_EVENT);
 
 static esp_timer_handle_t periodic_timer_bluetooth;
 
@@ -326,8 +327,9 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
     }
 }
 
-/////////
-int mac_count=0;
+///////// para realizar calculo con macs///////
+uint16_t mac_count=0;
+data_aforo_t estimado_aforo;
 
 //structura
 struct direccion_mac
@@ -344,28 +346,38 @@ int comparar_mac(struct direccion_mac *mac1, struct direccion_mac *mac2){
 }
 
 void anadir_mac(struct direccion_mac *nueva_mac){
-    for (int i=0; i < mac_count;i++){
-        if (comparar_mac(&lista_mac[i],nueva_mac)){
+    
+        for (int i=0; i < mac_count;i++){
+            if (comparar_mac(&lista_mac[i],nueva_mac)){
+                return;
+            }
+        }
+
+    
+        if (nueva_mac->intensidad >= -88){
+            mac_count++;
+            lista_mac[mac_count] = *nueva_mac;
+        } else {
+            //ESP_LOGI(GATTC_TAG, "DISPOSITIVO A MAS DE 10 METROS");
             return;
         }
-    }
-
-        if (nueva_mac->intensidad>=-88){
-            lista_mac[mac_count++]=*nueva_mac;
-    
-    }
 }
 
 void parsear_y_añadir_mac(uint8_t *mac_str, int mac_intensidad){
     struct direccion_mac nueva_mac;
 
     memcpy(nueva_mac.direccion,mac_str,MAC_LEN);
-    //memcpy(nueva_mac.intensidad,mac_intensidad, MAC_LEN);
     nueva_mac.intensidad=mac_intensidad;
     anadir_mac(&nueva_mac);
 
 }
 
+esp_err_t limpiar_lista_mac(struct direccion_mac lista_mac[MAX_MACS]){
+    memset(lista_mac, 0, sizeof(struct direccion_mac)* MAX_MACS);
+    mac_count=0;
+    return ESP_OK;
+}
+///hasta aqui para realizar caculos con macs////
 
 static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
@@ -376,6 +388,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         //the unit of the duration is second
         uint32_t duration = 1;
         esp_ble_gap_start_scanning(duration);
+
         break;
     }
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
@@ -391,34 +404,17 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
-            //esp_log_buffer_hex(GATTC_TAG, scan_result->scan_rst.bda, 6);
-            //ESP_LOGI(GATTC_TAG, "searched Adv Data Len %d, Scan Response Len %d", scan_result->scan_rst.adv_data_len, scan_result->scan_rst.scan_rsp_len);
-            adv_name = esp_ble_resolve_adv_data(scan_result->scan_rst.ble_adv,
-                                                ESP_BLE_AD_TYPE_NAME_CMPL, &adv_name_len);
-            //ESP_LOGI(GATTC_TAG, "searched Device Name Len %d", adv_name_len);
-            esp_log_buffer_char(GATTC_TAG, adv_name, adv_name_len);
             float base= 10.0;
             float exponente=(-68.0-((float)scan_result->scan_rst.rssi))/(10.0*2.0);
-            //ESP_LOGI("PRUEBAS", "EL DISPOSITIVO ESTA A %.3f  METROS y rssi %d",pow(base,exponente),scan_result->scan_rst.rssi);
+            //ESP_LOGI(GATTC_TAG, "EL DISPOSITIVO ESTA A %.3f  METROS y rssi %d",pow(base,exponente),scan_result->scan_rst.rssi);
             parsear_y_añadir_mac(scan_result->scan_rst.bda,scan_result->scan_rst.rssi);
-            //
-
-            ESP_LOGI("PRUEBA","HAY ALREDEDOR DE %d personas dentro del salon",mac_count);
-
-
-            if (adv_name != NULL) {
-                if (strlen(remote_device_name) == adv_name_len && strncmp((char *)adv_name, remote_device_name, adv_name_len) == 0) {
-                    ESP_LOGI(GATTC_TAG, "searched device %s\n", remote_device_name);
-                    if (connect == false) {
-                        connect = true;
-                        ESP_LOGI(GATTC_TAG, "connect to the remote device.");
-                        esp_ble_gap_stop_scanning();
-                        esp_ble_gattc_open(gl_profile_tab[PROFILE_A_APP_ID].gattc_if, scan_result->scan_rst.bda, scan_result->scan_rst.ble_addr_type, true);
-                    }
-                }
-            }
+            //ESP_LOGI(GATTC_TAG,"HAY ALREDEDOR DE %d personas dentro del salon",mac_count);
+            
             break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
+            estimado_aforo.cantidad_aforo=mac_count;
+            //hacer event post
+            ESP_ERROR_CHECK(esp_event_post(BLUETOOTH_EVENT, BLUETOOTH_ENVIA_DATO, &estimado_aforo, sizeof(estimado_aforo), portMAX_DELAY));
             break;
         default:
             break;
@@ -484,23 +480,36 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
     } while (0);
 }
 
+
 esp_err_t callback_bluetooth(){
     
     esp_err_t err;
+
+
+     err = esp_ble_gattc_app_unregister(gl_profile_tab[PROFILE_A_APP_ID].gattc_if);
+    if (err!=ESP_OK){
+        ESP_LOGE(GATTC_TAG, "%s gattc app unregister failed, error code = %x\n", __func__, err);
+        return err;
+    }
+
+    
     err = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
     if (err!=ESP_OK){
         ESP_LOGE(GATTC_TAG, "%s gattc app register failed, error code = %x\n", __func__, err);
         return err;
     }
+
     esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
     if (local_mtu_ret!=ESP_OK){
         ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
         return err;
     }
 
-    //event_post
-    ESP_ERROR_CHECK(esp_event_post(BLUETOOTH_CONFIG_EVENT,ESTIMACION_AFORO, NULL, sizeof(NULL), portMAX_DELAY));
-    vTaskDelete(NULL);
+    err=limpiar_lista_mac(lista_mac);
+    if(err!=ESP_OK){
+    ESP_LOGE(GATTC_TAG,"Error en limpiar macs regitradas, error code = %x\n",__func__,err);
+    return err;
+    }
 
     return ESP_OK;
     
@@ -508,18 +517,8 @@ esp_err_t callback_bluetooth(){
 
 
 
-esp_err_t bluetooth_init(void *bluetooth_handler) //void *bluetooth_handler
+esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 {
-    // // Initialize NVS.
-    // esp_err_t ret = nvs_flash_init();
-    // if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    //     ESP_ERROR_CHECK(nvs_flash_erase());
-    //     ret = nvs_flash_init();
-    // }
-    // ESP_ERROR_CHECK( ret );
-
-    //TODO: COLOCAR BIEN LOS MENSAJES PARA SABER DONDE FALLA
-
     esp_err_t err;
     ESP_LOGI(GATTC_TAG, "Init Bluetooth");
 
@@ -567,6 +566,7 @@ esp_err_t bluetooth_init(void *bluetooth_handler) //void *bluetooth_handler
     }
 
 
+
     const esp_timer_create_args_t periodic_timer_args = {
         .callback = callback_bluetooth,
         /* name is optional, but may help identify the timer when debugging */
@@ -579,12 +579,12 @@ esp_err_t bluetooth_init(void *bluetooth_handler) //void *bluetooth_handler
         return err;
     }
 
-    //Crear los eventos
-    err = esp_event_handler_register(BLUETOOTH_CONFIG_EVENT, ESP_EVENT_ANY_ID, bluetooth_handler, NULL);
+    err = esp_event_handler_register(BLUETOOTH_EVENT, ESP_EVENT_ANY_ID, bluetooth_handler, NULL);
     if (err!=ESP_OK){
         ESP_LOGE(GATTC_TAG,"Error en esp_event_handler_register: %s",esp_err_to_name(err));
         return err;
     }
+
 
    return ESP_OK;
 
@@ -592,6 +592,13 @@ esp_err_t bluetooth_init(void *bluetooth_handler) //void *bluetooth_handler
 
 
 esp_err_t estimacion_de_aforo(){
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth, (CONFIG_PERIODO_TEMP+1) * 1000000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  8* 1000000)); //CONFIG_PERIODO_TEMP
     return ESP_OK;
 }
+
+
+
+
+
+
+

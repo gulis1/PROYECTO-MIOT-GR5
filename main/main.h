@@ -45,6 +45,7 @@ typedef enum {
     //transcicion para para pasar a sensorizar 
     TRANS_CALIBRACION_REALIZADA,
     TRANS_LECTURA_SENSORES,
+    TRANS_LECTURA_BLUETOOTH,
 
     //transcicion para domir
     TRANS_DORMIR,
@@ -60,7 +61,6 @@ typedef struct {
     void *dato;
 } transicion_t;
 
-
 //auxiliar hora, para obtener la hora actual correcta (despues de sincronizarse) en cada modificacion de estado;
 extern void hora(void);
 extern esp_err_t comienza_reloj();
@@ -74,7 +74,7 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data); // se puede eliminar
 
 
 // Transiciones

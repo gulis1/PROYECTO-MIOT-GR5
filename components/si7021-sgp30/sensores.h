@@ -28,11 +28,13 @@ typedef struct {
     float temp_dato; 
 } data_sensores_t;
 
+
+
 esp_err_t sensores_init(void *sensores_handler);
 esp_err_t start_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
-void hora(void);
+//void hora(void); si funciona eliminarlo
 int data_json ();
 
 

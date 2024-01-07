@@ -219,8 +219,8 @@ esp_err_t thingsboard_init(void *handler) {
             return err;
         }
     #elif CONFIG_USE_MQTT
-        // Iniciación MQTT. Se le pasa el handler de los eventos
-        // MQTT para que se registre.
+        //Iniciación MQTT. Se le pasa el handler de los eventos
+        //MQTT para que se registre.
         err = mqtt_init(mqtt_handler, DEVICE_TOKEN, (char*) cert_pem_start);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en mqtt_api_init: %s", esp_err_to_name(err));

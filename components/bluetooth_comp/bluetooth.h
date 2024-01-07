@@ -21,12 +21,18 @@
 #include <esp_timer.h>
 
 enum {
-    ESTIMACION_AFORO
+    BLUETOOTH_ENVIA_DATO
 };
 
-ESP_EVENT_DECLARE_BASE(BLUETOOTH_CONFIG_EVENT);
+ESP_EVENT_DECLARE_BASE(BLUETOOTH_EVENT);
 
-esp_err_t bluetooth_init(void *bluetooth_handler);
+
+typedef struct 
+{
+    uint16_t cantidad_aforo;
+} data_aforo_t;
+
+esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler);
 esp_err_t estimacion_de_aforo();
 
 #endif

@@ -24,6 +24,8 @@ void main_task() {
         ESP_LOGE(TAG, "Provisonment failed.");
         return;
     }
+
+
     while (true) {
         
         transicion_t transicion;
@@ -115,7 +117,6 @@ void app_main(void) {
         return;
     }
 
-
     err = init_register_timer_wakeup(sleep_timer_handler);
     if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error en init_register_timer_wakeup: %s", esp_err_to_name(err));
@@ -134,15 +135,11 @@ void app_main(void) {
         return;
     }
 
-    err= bluetooth_init(bluetooth_handler);
-    if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en inicializar Bluetooth: %s", esp_err_to_name(err));
-        return;
-    }
-
     
 
-
+    //bluetooth init componente en el provioson done, ya que genera conflicto por el provisioning bluetooth
+    // se puede identificar las lines con __LINES_ y fichero con __FILE__
+    
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }

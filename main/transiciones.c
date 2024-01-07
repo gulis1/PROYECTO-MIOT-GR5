@@ -30,10 +30,15 @@ estado_t trans_estado_inicial(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_PROVISION:
-
+            esp_err_t err;
             prov_info_t *prov = (prov_info_t*) trans.dato;
             
             ESP_ERROR_CHECK(wifi_connect(prov->wifi_ssid, prov->wifi_pass));
+            
+            err= bluetooth_init_finish_provision(bluetooth_handler);
+            if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en inicializar Bluetooth: %s", esp_err_to_name(err));
+            }
 
             return ESTADO_PROVISIONADO;
             
@@ -48,7 +53,7 @@ estado_t trans_estado_provisionado(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_WIFI_READY:
-            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/ //ANGEL ESto es para sincronizar la hora
+            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/ //ANGEL:ESto es para sincronizar la hora
             ESP_ERROR_CHECK(start_time_sync());
             return ESTADO_CONECTADO;
             
@@ -63,6 +68,8 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
         case TRANS_SINCRONIZAR:
             ESP_LOGI(TAG,"sincronizacion realizada");
+            //una vez tiene la hora confirmar si es momento de dormir profundo o cuanto le falta
+            hora();
             thingsboard_start();
             return ESTADO_HORA_CONFIGURADA;
             
@@ -95,9 +102,7 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_CALIBRACION_REALIZADA:
-            //TRANS_LECTURA_AFORO:
-            //LECTURA DE AFORO IDEA ES UN TIMER QUE DE EL AFORO PUEDE SER EN PARELELO O IGUAL QUE SENSORES ESTAR
-            ESP_ERROR_CHECK(estimacion_de_aforo()); ///PRUEBAS AQUI 
+            ESP_ERROR_CHECK(estimacion_de_aforo());
             ESP_ERROR_CHECK(sensores_start());
             ESP_LOGI(TAG, "Calibración completada");
             return ESTADO_CALIBRADO;
@@ -118,6 +123,21 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
             thingsboard_telemetry_send(json_buffer);
             ESP_LOGI(TAG, "%s", json_buffer);
+
+            
+
+            return ESTADO_CALIBRADO;
+
+
+        case TRANS_LECTURA_BLUETOOTH:
+            
+            ////estimacion de aforo
+            char json_buffer_aforo[128];
+            //data_aforo_t *aforo= trans.dato;
+            sprintf(json_buffer_aforo,"{'estimacion aforo': %d}", trans.dato);
+            thingsboard_telemetry_send(json_buffer_aforo);
+            ESP_LOGI(TAG,"%s", json_buffer_aforo);
+
             return ESTADO_CALIBRADO;
 
         default:

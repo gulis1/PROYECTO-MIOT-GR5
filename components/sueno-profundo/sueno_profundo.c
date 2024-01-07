@@ -34,6 +34,7 @@
 
 ESP_EVENT_DEFINE_BASE(DEEP_SLEEP_EVENT);
 static const char *TAG = "timer_wakeup";
+static const char *TAG_2 = "deep_sleep";
 //char strftime_buf[64];
 
 time_t ahora;
@@ -47,7 +48,7 @@ struct tm *tiempo_final;
 
 int traspaso=0;
 int segundos_para_dormir;
-bool tipo_cambio_hora;
+bool tipo_cambio_hora; // creo que se puede cambiar hora
 int segundos_actuales;
 // int segundos_finales;
 // int segundos_iniciales;
@@ -63,7 +64,7 @@ int mitiempo_en_horas;
 int segundos_finales= HORA_FINAL*3600 + MINUTO_FINAL*60+SEGUNDO_FINAL;
 int segundos_iniciales= HORA_INICIO*3600 + MINUTOS_INICIO*60 + SEGUNDOS_INICIO;
 
-static esp_timer_handle_t periodic_timer_2;
+static esp_timer_handle_t periodic_timer_hora;
 
 
 void hora(void){
@@ -84,22 +85,38 @@ void hora(void){
     segundos_actuales = mitiempo_en_horas*3600 + mitiempo_en_minutos*60+mitiempo_en_segundos;
     momento_dormido=segundos_actuales;
 
-    // CASE FINAL>INICIAL OJO
-    if (traspaso!=1){ //Esto permite que al momento de encender/reiniciar como la hora no esta sincronizada la sincronice nuevamente.
-        ESP_LOGI("Inicializacion en proceso","configurando");
-    } else{
+    // // CASE FINAL>INICIAL OJO
+    // if (traspaso!=1){ //Esto permite que al momento de encender/reiniciar como la hora no esta sincronizada no haga el calculo precipatadamente.
+    //     ESP_LOGI("Inicializacion en proceso","configurando");
+    // } else{
+    //     if (segundos_actuales>segundos_finales){//((mitiempo_en_horas>HORA_FINAL || mitiempo_en_minutos>MINUTO_FINAL|| mitiempo_en_segundos> SEGUNDO_FINAL)){
+    //         printf("hola deberia estar dormido el tiempo es mayor");
+    //         ESP_LOGI("transicion","transicion numero %d",traspaso);
+    //         //momento_dormido=segundos_actuales;
+    //         segundos_para_despertar = (86400-momento_dormido)+((HORA_INICIO)*3600)+(MINUTOS_INICIO*60)+(SEGUNDOS_INICIO); //mass minutos y segundos
+    //         ESP_LOGI(TAG, "Entrando en deep sleep. quedan %llu segundos para despertar",segundos_para_despertar);
+    //         esp_sleep_enable_timer_wakeup(segundos_para_despertar * 1000 * 1000);
+    //         deep_sleep();
+    //     }else if (segundos_actuales<segundos_iniciales){//((mitiempo_en_horas<HORA_INICIO|| mitiempo_en_minutos<MINUTOS_INICIO|| mitiempo_en_segundos<SEGUNDOS_INICIO))
+    //         printf("hola deberia estar dormido el tiempo es menor");
+    //         ESP_LOGI("transicion","transicion numero %d",traspaso);
+    //         //momento_dormido=segundos_actuales;
+    //         segundos_para_despertar = segundos_iniciales-segundos_actuales;//(((HORA_INICIO-mitiempo_en_horas)*3600) + ((MINUTOS_INICIO-mitiempo_en_minutos)*60) + (MINUTOS_INICIO-mitiempo_en_segundos))-86400; //mass minutos y segundos
+    //         ESP_LOGI(TAG, "Entrando en deep sleep. quedan %llu segundos para despertar",segundos_para_despertar);
+    //         esp_sleep_enable_timer_wakeup(segundos_para_despertar * 1000 * 1000);
+    //         deep_sleep();
+    //     }
+
+
+        // CASE FINAL>INICIAL OJO
         if (segundos_actuales>segundos_finales){//((mitiempo_en_horas>HORA_FINAL || mitiempo_en_minutos>MINUTO_FINAL|| mitiempo_en_segundos> SEGUNDO_FINAL)){
-            printf("hola deberia estar dormido el tiempo es mayor");
-            ESP_LOGI("transicion","transicion numero %d",traspaso);
-            //momento_dormido=segundos_actuales;
+            //"hola deberia estar dormido el tiempo es mayor"
             segundos_para_despertar = (86400-momento_dormido)+((HORA_INICIO)*3600)+(MINUTOS_INICIO*60)+(SEGUNDOS_INICIO); //mass minutos y segundos
             ESP_LOGI(TAG, "Entrando en deep sleep. quedan %llu segundos para despertar",segundos_para_despertar);
             esp_sleep_enable_timer_wakeup(segundos_para_despertar * 1000 * 1000);
             deep_sleep();
         }else if (segundos_actuales<segundos_iniciales){//((mitiempo_en_horas<HORA_INICIO|| mitiempo_en_minutos<MINUTOS_INICIO|| mitiempo_en_segundos<SEGUNDOS_INICIO))
-            printf("hola deberia estar dormido el tiempo es menor");
-            ESP_LOGI("transicion","transicion numero %d",traspaso);
-            //momento_dormido=segundos_actuales;
+            //deberia estar dormido el tiempo es menor
             segundos_para_despertar = segundos_iniciales-segundos_actuales;//(((HORA_INICIO-mitiempo_en_horas)*3600) + ((MINUTOS_INICIO-mitiempo_en_minutos)*60) + (MINUTOS_INICIO-mitiempo_en_segundos))-86400; //mass minutos y segundos
             ESP_LOGI(TAG, "Entrando en deep sleep. quedan %llu segundos para despertar",segundos_para_despertar);
             esp_sleep_enable_timer_wakeup(segundos_para_despertar * 1000 * 1000);
@@ -107,10 +124,9 @@ void hora(void){
         }
         
         //TODOANGEL se puede poner deepsleep:
-    }
     vTaskDelay(500 / portTICK_PERIOD_MS); //TODOANGEL,ESTO SE PUEDE QUITAR//bloquea la tarea por menos de un segundo para intentar enentrear en suño se puede que juso antes del tiempo de mientreo, sacando un porcentaje o similar 
+}
 
-} 
 
 esp_err_t init_register_timer_wakeup(void *hora_handler)
 {
@@ -124,7 +140,7 @@ esp_err_t init_register_timer_wakeup(void *hora_handler)
         .name = "reloj"
     };
 
-    err = esp_timer_create(&periodic_timer_args, &periodic_timer_2);
+    err = esp_timer_create(&periodic_timer_args, &periodic_timer_hora);
     if (err!=ESP_OK){
         ESP_LOGE(TAG,"Error en esp_timer_create: %s",esp_err_to_name(err));
         return err;
@@ -140,9 +156,8 @@ esp_err_t init_register_timer_wakeup(void *hora_handler)
 }
 
 void entrar_deep_sleep(){
-    const char *TAG = "deep_sleep";
-            printf("hola deberia estar dormido");
-            ESP_LOGI(TAG, "Entrando en deep sleep.");
+    
+            //ESP_LOGI(TAG_2, "Entrando en deep sleep.");
             esp_deep_sleep_start();
             // envent post
             ESP_ERROR_CHECK(esp_event_post(DEEP_SLEEP_EVENT,PASAR_A_DORMIR, NULL, sizeof(NULL), portMAX_DELAY));
@@ -155,7 +170,7 @@ esp_err_t deep_sleep(){
 }
 
 esp_err_t comienza_reloj(){
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_2, 1 * 1000000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_hora, 600 * 1000000)); //600-> 10min
     return ESP_OK;
 }
 

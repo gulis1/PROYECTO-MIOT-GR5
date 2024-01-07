@@ -63,7 +63,6 @@ esp_err_t sensores_init(void *sensores_handler) {
     esp_err_t err;
 
     ESP_LOGI(TAG, "SGP30 main task initializing...");
-   //i2c_master_init_sgp30();
 
     err = i2c_master_driver_initialize();
     if (err!=ESP_OK){
@@ -98,14 +97,14 @@ esp_err_t sensores_init(void *sensores_handler) {
 
 void calibracion() {
 
-    for (int i = 0; i < 1; i++) { 
+    for (int i = 0; i < 14; i++) { 
         sgp30_IAQ_measure(&main_sgp30_sensor);
-        ESP_LOGI(TAG, "SGP30 Calibrating... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "SGP30 Calibrando... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
     }
 
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, CALIBRACION_REALIZADA, NULL, 0, portMAX_DELAY));
 
-    // TODO: guradar valores calibracion en la flash ¿PODRIA POR TEMA DE TEMP?
     vTaskDelete(NULL);
 }
 
