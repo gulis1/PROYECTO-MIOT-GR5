@@ -44,7 +44,7 @@ static char *DEVICE_TOKEN = NULL;
 static void coap_io_callback() {
 
     while (true) {
-        coap_io_process(coap_ctx, CONFIG_COAP_WAIT_MS);
+        coap_io_process(coap_ctx, 1000);
     }
 }
 

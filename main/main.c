@@ -12,6 +12,7 @@
 #include "sntp_client.h"
 #include "power_mngr.h"
 #include "thingsboard.h"
+#include "bluetooth.h"
 
 const static char* TAG = "main.c";
 
@@ -23,6 +24,8 @@ void main_task() {
         ESP_LOGE(TAG, "Provisonment failed.");
         return;
     }
+
+
     while (true) {
         
         transicion_t transicion;

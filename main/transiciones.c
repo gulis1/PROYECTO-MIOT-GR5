@@ -20,6 +20,7 @@
 #include "sntp_client.h"
 #include "power_mngr.h"
 #include "thingsboard.h"
+#include "bluetooth.h"
 
 const static char *TAG = "transiciones.c";
 
@@ -29,10 +30,15 @@ estado_t trans_estado_inicial(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_PROVISION:
-
+            esp_err_t err;
             prov_info_t *prov = (prov_info_t*) trans.dato;
             
             ESP_ERROR_CHECK(wifi_connect(prov->wifi_ssid, prov->wifi_pass));
+            
+            err= bluetooth_init_finish_provision(bluetooth_handler);
+            if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en inicializar Bluetooth: %s", esp_err_to_name(err));
+            }
 
             return ESTADO_PROVISIONADO;
             
@@ -49,6 +55,7 @@ estado_t trans_estado_provisionado(transicion_t trans) {
         case TRANS_WIFI_READY:
             /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
             ESP_ERROR_CHECK(time_sync_start());
+
             return ESTADO_CONECTADO;
             
         default:
@@ -62,6 +69,8 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
         case TRANS_SINCRONIZAR:
             ESP_LOGI(TAG,"sincronizacion realizada");
+            //una vez tiene la hora confirmar si es momento de dormir profundo o cuanto le falta
+            hora();
             thingsboard_start();
             return ESTADO_HORA_CONFIGURADA;
             
@@ -94,6 +103,7 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_CALIBRACION_REALIZADA:
+            ESP_ERROR_CHECK(estimacion_de_aforo());
             ESP_ERROR_CHECK(sensores_start());
             ESP_ERROR_CHECK(power_manager_start());
             ESP_LOGI(TAG, "Calibración completada");
@@ -114,7 +124,16 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
             thingsboard_telemetry_send(json_buffer);
-            // ESP_LOGI(TAG, "%s", json_buffer);
+            return ESTADO_CALIBRADO;
+
+
+        case TRANS_LECTURA_BLUETOOTH:
+            
+            char json_buffer_aforo[128];
+            sprintf(json_buffer_aforo,"{'estimacion aforo': %d}", trans.dato);
+            thingsboard_telemetry_send(json_buffer_aforo);
+            ESP_LOGI(TAG,"%s", json_buffer_aforo);
+
             return ESTADO_CALIBRADO;
 
         case TRANS_THINGSBOARD_FW_UPDATE:

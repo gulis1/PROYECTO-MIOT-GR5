@@ -35,9 +35,13 @@ typedef enum {
     //transcicion para para pasar a sensorizar 
     TRANS_CALIBRACION_REALIZADA,
     TRANS_LECTURA_SENSORES,
+    TRANS_LECTURA_BLUETOOTH,
 
     //transcicion para domir
-    TRANS_DORMIR
+    TRANS_DORMIR,
+
+    //transcicion para estimar aforo
+    TRANS_LECTURA_AFORO //creo que no sirve 
 
 } tipo_transicion_t;
 
@@ -46,7 +50,6 @@ typedef struct {
     tipo_transicion_t tipo;
     void *dato;
 } transicion_t;
-
 
 //auxiliar hora, para obtener la hora actual correcta (despues de sincronizarse) en cada modificacion de estado;
 extern void hora(void);
@@ -61,6 +64,7 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data); // se puede eliminar
 
 
 // Transiciones
