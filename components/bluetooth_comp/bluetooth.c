@@ -328,8 +328,8 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
 }
 
 ///////// para realizar calculo con macs///////
-uint16_t mac_count=0;
-data_aforo_t estimado_aforo;
+int mac_count = 0;
+int aforo_estimado = 0;
 
 //structura
 struct direccion_mac
@@ -381,8 +381,6 @@ esp_err_t limpiar_lista_mac(struct direccion_mac lista_mac[MAX_MACS]){
 
 static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
 {
-    uint8_t *adv_name = NULL;
-    uint8_t adv_name_len = 0;
     switch (event) {
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
         //the unit of the duration is second
@@ -404,17 +402,13 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         esp_ble_gap_cb_param_t *scan_result = (esp_ble_gap_cb_param_t *)param;
         switch (scan_result->scan_rst.search_evt) {
         case ESP_GAP_SEARCH_INQ_RES_EVT:
-            float base= 10.0;
-            float exponente=(-68.0-((float)scan_result->scan_rst.rssi))/(10.0*2.0);
-            //ESP_LOGI(GATTC_TAG, "EL DISPOSITIVO ESTA A %.3f  METROS y rssi %d",pow(base,exponente),scan_result->scan_rst.rssi);
             parsear_y_añadir_mac(scan_result->scan_rst.bda,scan_result->scan_rst.rssi);
-            //ESP_LOGI(GATTC_TAG,"HAY ALREDEDOR DE %d personas dentro del salon",mac_count);
-            
             break;
+
         case ESP_GAP_SEARCH_INQ_CMPL_EVT:
-            estimado_aforo.cantidad_aforo=mac_count;
-            //hacer event post
-            ESP_ERROR_CHECK(esp_event_post(BLUETOOTH_EVENT, BLUETOOTH_ENVIA_DATO, &estimado_aforo, sizeof(estimado_aforo), portMAX_DELAY));
+            aforo_estimado = mac_count;
+            int *event_data = &aforo_estimado;
+            ESP_ERROR_CHECK(esp_event_post(BLUETOOTH_EVENT, BLUETOOTH_ENVIA_DATO, &event_data, sizeof(event_data), portMAX_DELAY));
             break;
         default:
             break;
@@ -485,30 +479,28 @@ esp_err_t callback_bluetooth(){
     
     esp_err_t err;
 
-
-     err = esp_ble_gattc_app_unregister(gl_profile_tab[PROFILE_A_APP_ID].gattc_if);
-    if (err!=ESP_OK){
+    err = esp_ble_gattc_app_unregister(gl_profile_tab[PROFILE_A_APP_ID].gattc_if);
+    if (err != ESP_OK){
         ESP_LOGE(GATTC_TAG, "%s gattc app unregister failed, error code = %x\n", __func__, err);
         return err;
     }
-
-    
+  
     err = esp_ble_gattc_app_register(PROFILE_A_APP_ID);
-    if (err!=ESP_OK){
+    if (err != ESP_OK){
         ESP_LOGE(GATTC_TAG, "%s gattc app register failed, error code = %x\n", __func__, err);
         return err;
     }
 
     esp_err_t local_mtu_ret = esp_ble_gatt_set_local_mtu(500);
-    if (local_mtu_ret!=ESP_OK){
+    if (local_mtu_ret != ESP_OK){
         ESP_LOGE(GATTC_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
         return err;
     }
 
     err=limpiar_lista_mac(lista_mac);
-    if(err!=ESP_OK){
-    ESP_LOGE(GATTC_TAG,"Error en limpiar macs regitradas, error code = %x\n",__func__,err);
-    return err;
+    if(err != ESP_OK){
+        ESP_LOGE(GATTC_TAG,"Error en limpiar macs regitradas, error code = %x\n",__func__,err);
+        return err;
     }
 
     return ESP_OK;
@@ -568,7 +560,7 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 
 
     const esp_timer_create_args_t periodic_timer_args = {
-        .callback = callback_bluetooth,
+        .callback = (void*) callback_bluetooth,
         /* name is optional, but may help identify the timer when debugging */
         .name = "bluetooth callback"
     };

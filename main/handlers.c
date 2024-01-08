@@ -16,6 +16,10 @@
 
 #include <esp_event.h>
 #include <esp_log.h>
+#include "sntp_client.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
 
 #include "main.h"
 #include "wifi.h"
@@ -23,35 +27,7 @@
 #include "sensores.h"
 #include "thingsboard.h" 
 #include "power_mngr.h"
-#include "sntp_client.h"
-
-////////////////////
-#include <stdio.h>
-#include <string.h>
-#include "esp_system.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "esp_event.h"
-#include "esp_timer.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/queue.h>
-
-
-#include "esp_pm.h"
-
-
-#include <time.h>
-#include <sys/time.h>
-#include "sdkconfig.h"
-
-#include "esp_sleep.h"
-#include "driver/rtc_io.h"
-#include "nvs_flash.h"
-#include "nvs.h"
-#include "driver/uart.h"
-#include "esp_timer.h"
+#include "bluetooth.h"
 
 //////////////
 
@@ -179,10 +155,10 @@ void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int
         
         case BLUETOOTH_ENVIA_DATO:
         
-        data_aforo_t *info_data_aforo_a_pasar =  ((data_aforo_t*)event_data);
-        trans.tipo= TRANS_LECTURA_BLUETOOTH; 
-        trans.dato= info_data_aforo_a_pasar->cantidad_aforo;
-        xQueueSend(fsm_queue,&trans, portMAX_DELAY);
+        int *aforo = *((int**)event_data);
+        trans.tipo = TRANS_LECTURA_BLUETOOTH; 
+        trans.dato = aforo;
+        xQueueSend(fsm_queue, &trans, portMAX_DELAY);
         break;
         
     default:

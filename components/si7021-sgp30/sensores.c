@@ -52,7 +52,7 @@ static void lectura_sensores_callback(){
     DATA_SENSORES.TVOC_dato = main_sgp30_sensor.TVOC;
     DATA_SENSORES.temp_dato = temp;
 
-    void *dato_sensores =&DATA_SENSORES;
+    void *dato_sensores = &DATA_SENSORES;
 
     //Envio post
     ESP_ERROR_CHECK(esp_event_post(SENSORES_EVENT, SENSORES_ENVIAN_DATO, &dato_sensores, sizeof(dato_sensores), portMAX_DELAY)); //se envia a la cola?? recordad hacer el free de json  en la transicion cJSON_Delete(root); parece no hizo falta porque el json lo estruturamos de forma manual

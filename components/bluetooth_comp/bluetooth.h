@@ -26,12 +26,6 @@ enum {
 
 ESP_EVENT_DECLARE_BASE(BLUETOOTH_EVENT);
 
-
-typedef struct 
-{
-    uint16_t cantidad_aforo;
-} data_aforo_t;
-
 esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler);
 esp_err_t estimacion_de_aforo();
 

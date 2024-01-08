@@ -69,8 +69,6 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
         case TRANS_SINCRONIZAR:
             ESP_LOGI(TAG,"sincronizacion realizada");
-            //una vez tiene la hora confirmar si es momento de dormir profundo o cuanto le falta
-            hora();
             thingsboard_start();
             return ESTADO_HORA_CONFIGURADA;
             
@@ -116,11 +114,11 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
 
 estado_t trans_estado_calibrado(transicion_t trans) {
 
+    char json_buffer[128];
     switch (trans.tipo) {
 
         case TRANS_LECTURA_SENSORES:
 
-            char json_buffer[128];
             data_sensores_t *lecturas = trans.dato;
             sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
             thingsboard_telemetry_send(json_buffer);
@@ -129,10 +127,10 @@ estado_t trans_estado_calibrado(transicion_t trans) {
 
         case TRANS_LECTURA_BLUETOOTH:
             
-            char json_buffer_aforo[128];
-            sprintf(json_buffer_aforo,"{'estimacion aforo': %d}", trans.dato);
-            thingsboard_telemetry_send(json_buffer_aforo);
-            ESP_LOGI(TAG,"%s", json_buffer_aforo);
+            int aforo = (*(int*)trans.dato);
+            sprintf(json_buffer, "{'estimacion aforo': %d}", aforo);
+            thingsboard_telemetry_send(json_buffer);
+            ESP_LOGI(TAG,"%s", json_buffer);
 
             return ESTADO_CALIBRADO;
 
