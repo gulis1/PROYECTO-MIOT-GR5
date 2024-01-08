@@ -136,10 +136,6 @@ void app_main(void) {
     }
 
     
-
-    //bluetooth init componente en el provioson done, ya que genera conflicto por el provisioning bluetooth
-    // se puede identificar las lines con __LINES_ y fichero con __FILE__
-    
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }
