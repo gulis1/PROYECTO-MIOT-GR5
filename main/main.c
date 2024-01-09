@@ -16,7 +16,6 @@
 
 const static char* TAG = "main.c";
 
-
 void main_task() {
 
     estado_t estado_actual = ESTADO_SIN_PROVISION;
@@ -70,6 +69,8 @@ void main_task() {
 void app_main(void) {
 
     esp_err_t err;
+
+    ESP_LOGI(TAG, "Starting firmware version %s", CONFIG_APP_PROJECT_VER);
 
     // Iniciación flash.
     err = nvs_flash_init();

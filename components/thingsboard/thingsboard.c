@@ -31,12 +31,16 @@ extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
 #ifdef CONFIG_USE_COAP
 uint8_t COAP_TOKEN_FW_UPDATE[8] = {0};
 uint8_t COAP_TOKEN_PROVISION[8] = {0};
+#else
+int MQTT_FW_UPDATE_REQUEST_ID = 1;
 #endif
+
 
 /*
     COSAS OTA
 */
 esp_ota_handle_t ota_handle;
+static bool currently_updating = false;
 const static uint32_t FW_UPDATE_CHUNK_SIZE = 1024;
 static uint32_t fw_chunks_downloaded = 0;
 static uint32_t fw_total_chunks = 0;
@@ -67,25 +71,34 @@ static void fw_update_download_chunk(int chunk) {
         }
 
         if (err != ESP_OK) {
+            fw_update_send_state("FAILED");
             ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
         }
 
     #else
-        ESP_LOGW(TAG, "OTA no implementado por MQTT todavia.");
+
+        char payload_buffer[16];
+        char topic_buffer[128];
+        int n = snprintf(topic_buffer, sizeof(topic_buffer), "v2/fw/request/%d/chunk/%d", MQTT_FW_UPDATE_REQUEST_ID, chunk);
+        if (n >= sizeof(topic_buffer)) {
+            fw_update_send_state("FAILED");
+            ESP_LOGE(TAG, "Failed to download firmware: MQTT topic too long.");
+            return;
+        }
+
+        n = snprintf(payload_buffer, sizeof(payload_buffer), "%lu", FW_UPDATE_CHUNK_SIZE);
+        if (n >= sizeof(topic_buffer)) {
+            fw_update_send_state("FAILED");
+            ESP_LOGE(TAG, "Chunk size buffer too small.");
+            return;
+        }
+
+        for (int i = 0; i < 5; i++) {
+            err = mqtt_send(topic_buffer, payload_buffer, 1);
+            if (err == ESP_OK)
+                break;
+        }
     #endif
-}
-
-static esp_err_t fw_update_begin(int fw_size) {
-
-    ESP_LOGI(TAG, "Iniciando actualizacion. Nueva versión: %d bytes", fw_size);
-    fw_chunks_downloaded = 0;
-    fw_total_chunks = (int) ceil((double) fw_size / (double) FW_UPDATE_CHUNK_SIZE);
-    
-    // Se indica a thingsboard que se está descargando la actualización.
-    fw_update_send_state("DOWNLOADING");
-    fw_update_download_chunk(0);
-
-    return ESP_OK;
 }
 
 static esp_err_t fw_update_downloaded() {
@@ -105,6 +118,33 @@ static esp_err_t fw_update_downloaded() {
     fw_update_send_state("UPDATING");
     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_FW_UPDATE_READY, NULL, 0, portMAX_DELAY);
     
+    return ESP_OK;
+}
+
+static void fw_update_chunk_received(char *data, int data_len) {
+
+    ESP_ERROR_CHECK(esp_ota_write_with_offset(ota_handle, data, data_len, FW_UPDATE_CHUNK_SIZE * fw_chunks_downloaded));
+    fw_chunks_downloaded += 1;
+    ESP_LOGI(TAG, "Downloaded update chunk %lu/%lu", fw_chunks_downloaded, fw_total_chunks);
+
+    if (fw_chunks_downloaded < fw_total_chunks) {
+        fw_update_download_chunk(fw_chunks_downloaded);
+    }
+    else 
+        ESP_ERROR_CHECK(fw_update_downloaded());
+}
+
+static esp_err_t fw_update_begin(int fw_size) {
+
+    currently_updating = true;
+    ESP_LOGI(TAG, "Iniciando actualizacion. Nueva versión: %d bytes", fw_size);
+    fw_chunks_downloaded = 0;
+    fw_total_chunks = (int) ceil((double) fw_size / (double) FW_UPDATE_CHUNK_SIZE);
+    
+    // Se indica a thingsboard que se está descargando la actualización.
+    fw_update_send_state("DOWNLOADING");
+    fw_update_download_chunk(0);
+
     return ESP_OK;
 }
 
@@ -156,20 +196,32 @@ static esp_err_t parse_attributes(cJSON *json) {
     
     // Comprobamos actualizaciones de firmware.
     cJSON *fw_version_json = cJSON_GetObjectItem(json, "fw_version");
-    cJSON *fw_version_size = cJSON_GetObjectItem(json, "fw_size");
-    if (fw_version_json != NULL && fw_version_size != NULL) {
+    cJSON *fw_size_json = cJSON_GetObjectItem(json, "fw_size");
+    cJSON *fw_title_json = cJSON_GetObjectItem(json, "fw_title");
+    if (fw_version_json != NULL && fw_size_json != NULL && fw_title_json != NULL) {
         
         char *fw_version = cJSON_GetStringValue(fw_version_json);
-        int fw_size =  (int) cJSON_GetNumberValue(fw_version_size);
-        if (strcmp(fw_version, CONFIG_APP_PROJECT_VER) != 0) {
+        int fw_size =  (int) cJSON_GetNumberValue(fw_size_json);
+        if (!currently_updating && strcmp(fw_version, CONFIG_APP_PROJECT_VER) != 0) {
             ESP_ERROR_CHECK(fw_update_begin(fw_size));
         }
-        else
+        else {
             ESP_LOGI(TAG, "La versión del firmware es la más actual.");
+
+            // Avisar a thingsboard de que ya estamos actualizados.
+            cJSON *json_updated = cJSON_CreateObject();
+            cJSON_AddStringToObject(json_updated, "current_fw_title", cJSON_GetStringValue(fw_title_json));
+            cJSON_AddStringToObject(json_updated, "current_fw_version", CONFIG_APP_PROJECT_VER);
+            cJSON_AddStringToObject(json_updated, "fw_state", "UPDATED");
+            char *payload = cJSON_PrintUnformatted(json_updated);
+            thingsboard_telemetry_send(payload);
+            cJSON_free(json_updated);
+            cJSON_free(payload);
+        }
     }
     
-    // Al recibir datos de thingsboard marcmos la actualización como válida.
-    esp_ota_mark_app_valid_cancel_rollback();
+    // Al recibir datos de thingsboard marcamos la actualización como válida.
+    ESP_ERROR_CHECK(esp_ota_mark_app_valid_cancel_rollback());
 
     return ESP_OK;
 }
@@ -215,8 +267,9 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 ESP_LOGI(TAG, "Enviada solicitud de provisionamiento");
             }
             else {
-                // Si ya estamos, enviamos el evento de ready directamente.
+                // Ya estamos provisionados.
                 mqtt_subscribe("v1/devices/me/attributes");
+                mqtt_subscribe("v2/fw/response/+/chunk/+");
                 esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
             }
             break;
@@ -227,10 +280,15 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
             break;
 
         case MQTT_EVENT_DATA:
-            ESP_LOGI(TAG, "Recibido mensaje MQTT:\n%.*s\n", mqtt_event->data_len, mqtt_event->data);
-            ESP_LOGI(TAG, "Topic MQTT:\n%.*s\n", mqtt_event->topic_len, mqtt_event->topic);
+
+            if (mqtt_event->topic_len == 0) {
+                ESP_LOGE(TAG, "WHAAAAAAAAAAAAAAAAAAAAAAAT. Dta len: %d", mqtt_event->data_len);
+                return;
+            }
+            ESP_LOGI(TAG, "Recbido mensaje a topic MQTT:\n%.*s\n", mqtt_event->topic_len, mqtt_event->topic);
             
-            if (strncmp(mqtt_event->topic, "/provision/response", mqtt_event->topic_len) == 0) {  
+            if (strncmp(mqtt_event->topic, "/provision/response", mqtt_event->topic_len) == 0) { 
+                ESP_LOGI(TAG, "Mensaje MQTT:\n%.*s\n", mqtt_event->data_len, mqtt_event->data);
                 ESP_ERROR_CHECK(parse_received_device_token(mqtt_event->data, mqtt_event->data_len));
                 ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
                 xTaskCreate(restart_mqtt_client, "Restart mqtt client", 2048, NULL, 8, NULL);
@@ -240,6 +298,7 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                     || strncmp(mqtt_event->topic, "v1/devices/me/attributes/response", 32) == 0)
 
             {
+                ESP_LOGI(TAG, "Mensaje atributos MQTT:\n%.*s\n", mqtt_event->data_len, mqtt_event->data);
                 // Hay que sacar el campo shared de aqui.
                 cJSON *json = cJSON_ParseWithLength(mqtt_event->data, mqtt_event->data_len);
                 if (json == NULL) {
@@ -249,9 +308,15 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 cJSON *shared = cJSON_GetObjectItem(json, "shared");
                 if (shared != NULL)
                     parse_attributes(shared);
+                else
+                    parse_attributes(json);
 
                 cJSON_free(json);
             
+            }
+            else {
+                ESP_LOGI(TAG, "Tamaño mensaje MQTT %d", mqtt_event->data_len);
+                fw_update_chunk_received(mqtt_event->data, mqtt_event->data_len);
             }
 
             break;
@@ -302,28 +367,21 @@ static coap_response_t coap_handler(coap_session_t *session,
             }
 
             else if (memcmp(token.s, COAP_TOKEN_FW_UPDATE, token.length) == 0) {
-
-                ESP_ERROR_CHECK(esp_ota_write_with_offset(ota_handle, data, data_len, FW_UPDATE_CHUNK_SIZE * fw_chunks_downloaded));
-                fw_chunks_downloaded += 1;
-                ESP_LOGI(TAG, "Downloaded update chunk %lu/%lu", fw_chunks_downloaded, fw_total_chunks);
-                if (fw_chunks_downloaded < fw_total_chunks) {
-                    fw_update_download_chunk(fw_chunks_downloaded);
-                }
-                else 
-                    ESP_ERROR_CHECK(fw_update_downloaded());
+                fw_update_chunk_received((char*) data, data_len);
             }
 
             else {
 
-                cJSON *json = cJSON_ParseWithLength((const char*)received, len);
+                // Suponemos que se trata de un reporte de cambio en los atributos.
+                ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
+
+                cJSON *json = cJSON_ParseWithLength((const char*)data, data_len);
                 if (json == NULL) {
                     ESP_LOGE(TAG, "Error al parsear JSON recibido.");
                     return COAP_RESPONSE_OK;
                 }
 
-                // Suponemos que se trata de un reporte de cambio en los atributos.
-                ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
-                parse_attributes(data, data_len);
+                parse_attributes(json);
                 cJSON_free(json);
             }
 
@@ -345,8 +403,6 @@ esp_err_t thingsboard_init(void *handler) {
 
     esp_err_t err;
     size_t len;
-
-    ESP_LOGI(TAG, "Version actual del firmware: %s", CONFIG_APP_PROJECT_VER);
 
     err = esp_event_handler_register(THINGSBOARD_EVENT, ESP_EVENT_ANY_ID, handler, NULL);
     if (err != ESP_OK) {
