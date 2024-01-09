@@ -9,13 +9,12 @@
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
-#include "configuracion_hora.h"
-#include "sueno_profundo.h"
+#include "sntp_client.h"
+#include "power_mngr.h"
 #include "thingsboard.h"
 #include "bluetooth.h"
 
 const static char* TAG = "main.c";
-
 
 void main_task() {
 
@@ -52,10 +51,6 @@ void main_task() {
                 estado_actual=trans_estado_hora_configurada(transicion);
                 break;
 
-            case ESTADO_DORMIDO:
-                estado_actual = trans_estado_hora_configurada(transicion);
-                break;
-
             case ESTADO_THINGSBOARD_READY:
                 estado_actual = trans_estado_thingsboard_ready(transicion);
                 break;
@@ -75,7 +70,8 @@ void app_main(void) {
 
     esp_err_t err;
 
-    
+    ESP_LOGI(TAG, "Starting firmware version %s", CONFIG_APP_PROJECT_VER);
+
     // Iniciación flash.
     err = nvs_flash_init();
     if (err != ESP_OK) {
@@ -111,31 +107,18 @@ void app_main(void) {
         return;
     }
   
-    err = sntp_init_hora(hora_handler);
+    err = tyme_sync_init(hora_handler);
     if (err != ESP_OK) {
     ESP_LOGE(TAG, "Error en sntp_init_hora: %s", esp_err_to_name(err));
         return;
     }
 
-    err = init_register_timer_wakeup(sleep_timer_handler);
+    err = power_manager_init(power_manager_handler);
     if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en init_register_timer_wakeup: %s", esp_err_to_name(err));
-        return;
+    ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
+    return;
     }
 
-    // err = power_manager_init();
-    // if (err != ESP_OK) {
-    // ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
-    // return;
-    // }
-
-    err = comienza_reloj();
-    if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en iniciar reloj: %s", esp_err_to_name(err));
-        return;
-    }
-
-    
     TaskHandle_t task_handle;
     xTaskCreate(main_task, "Main task", 4096, NULL, 5, &task_handle);
 }

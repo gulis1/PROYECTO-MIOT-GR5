@@ -1,16 +1,6 @@
 #include <esp_event.h>
 
 extern QueueHandle_t fsm_queue;
-extern char strftime_buf[64];
-extern char hora_actual[80]; //TODOANGEL: se puede poner 64
-extern int traspaso;
-
-
-// extern time_t ahora;
-// extern struct tm *miTiempo;
-// extern struct tm *mitiempo_en_segundos;
-// extern struct tm *mitiempo_en_minutos;
-// extern struct tm *mitiempo_en_horas;
 
 // Tipos de datos.
 typedef enum {
@@ -23,7 +13,6 @@ typedef enum {
     //Estado Actual sensorizar
     ESTADO_CALIBRADO,
     //Estado dormido
-    ESTADO_DORMIDO
 
 } estado_t;
 
@@ -41,6 +30,7 @@ typedef enum {
     TRANS_SINCRONIZAR,
     TRANS_THINGSBOARD_READY,
     TRANS_THINGSBOARD_UNAVAILABLE,
+    TRANS_THINGSBOARD_FW_UPDATE,
 
     //transcicion para para pasar a sensorizar 
     TRANS_CALIBRACION_REALIZADA,
@@ -73,7 +63,7 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data); // se puede eliminar
 
 
@@ -83,6 +73,5 @@ estado_t trans_estado_provisionado(transicion_t trans);
 estado_t trans_estado_conectado(transicion_t trans);
 estado_t trans_estado_calibrado(transicion_t trans);
 estado_t trans_estado_hora_configurada(transicion_t trans);
-estado_t trans_estado_durmiendo(transicion_t trans);
 estado_t trans_estado_thingsboard_ready(transicion_t trans);
 estado_t trans_estado_calibrado(transicion_t trans);
