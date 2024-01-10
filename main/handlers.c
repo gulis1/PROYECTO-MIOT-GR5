@@ -47,6 +47,12 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
                 ESP_LOGI(TAG, "IP ACQUIRED\n");
                 break;
 
+            case WIFI_EVENT_STA_DISCONNECTED:
+                trans.tipo = TRANS_WIFI_DISCONECT;
+                xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+                ESP_LOGI(TAG, "WIFI disconnected\n");
+                break;
+
             default:
                 ESP_LOGE("WIFI_HANDLER", "Evento desconocido.");
             }
@@ -57,7 +63,7 @@ void wifi_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
         switch (event_id) {
             
             case IP_EVENT_STA_GOT_IP:
-                trans.tipo=TRANS_WIFI_READY;
+                trans.tipo = TRANS_WIFI_READY;
                 xQueueSend(fsm_queue, &trans, portMAX_DELAY);
                 ESP_LOGI(TAG, "IP ACQUIRED\n");
                 break;
@@ -146,8 +152,6 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
     }
 }
 
-
-//este es el handler de bluetooth
 void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
     transicion_t trans;
     

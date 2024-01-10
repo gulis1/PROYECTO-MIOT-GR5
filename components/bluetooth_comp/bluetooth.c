@@ -113,7 +113,7 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
 
     switch (event) {
     case ESP_GATTC_REG_EVT:
-        ESP_LOGI(GATTC_TAG, "REG_EVT");
+        // ESP_LOGI(GATTC_TAG, "REG_EVT");
         esp_err_t scan_ret = esp_ble_gap_set_scan_params(&ble_scan_params);
         if (scan_ret){
             ESP_LOGE(GATTC_TAG, "set scan params error, error code = %x", scan_ret);
@@ -395,7 +395,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
             ESP_LOGE(GATTC_TAG, "scan start failed, error status = %x", param->scan_start_cmpl.status);
             break;
         }
-        ESP_LOGI(GATTC_TAG, "scan start success");
+        // ESP_LOGI(GATTC_TAG, "scan start success");
 
         break;
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
@@ -584,7 +584,7 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 
 
 esp_err_t estimacion_de_aforo(){
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  8* 1000000)); //CONFIG_PERIODO_TEMP
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  8 * 1000000)); //CONFIG_PERIODO_TEMP
     return ESP_OK;
 }
 
