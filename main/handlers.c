@@ -16,15 +16,20 @@
 
 #include <esp_event.h>
 #include <esp_log.h>
+#include "sntp_client.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
 
 #include "main.h"
 #include "wifi.h"
 #include "provision.h"
 #include "sensores.h"
 #include "thingsboard.h" 
-#include "sueno_profundo.h"
-#include "configuracion_hora.h"
+#include "power_mngr.h"
+#include "bluetooth.h"
 
+//////////////
 
 // Cola de transiciones para la máquina de estados.
 QueueHandle_t fsm_queue;
@@ -107,13 +112,17 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
 
+        case THINGSBOARD_FW_UPDATE_READY:
+            trans.tipo = TRANS_THINGSBOARD_FW_UPDATE;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
         default:
             ESP_LOGE("PROV_HANDLER", "Evento desconocido.");
     }
 }
 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
-
     transicion_t trans;
 
     switch (event_id) {
@@ -128,6 +137,7 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
         case CALIBRACION_REALIZADA:
 
             trans.tipo = TRANS_CALIBRACION_REALIZADA;
+
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
 
@@ -135,6 +145,29 @@ void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int3
             ESP_LOGI("SENSORES_HANDLER", "Evento desconocido.");
     }
 }
+
+
+//este es el handler de bluetooth
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    transicion_t trans;
+    
+    switch (event_id){
+        
+        case BLUETOOTH_ENVIA_DATO:
+        
+        int *aforo = *((int**)event_data);
+        trans.tipo = TRANS_LECTURA_BLUETOOTH; 
+        trans.dato = aforo;
+        xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+        break;
+        
+    default:
+        ESP_LOGI("BLUETOOTH_HANDLER", "Evento desconocido.");
+        break;
+    }
+}
+
+
 
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
 
@@ -150,9 +183,10 @@ void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
     }
 }
 
-void sleep_timer_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    
     transicion_t trans;
-        switch (event_id) {
+    switch (event_id) {
         case PASAR_A_DORMIR:
             trans.tipo = TRANS_DORMIR;
             ESP_LOGI("SLEEP_HANLDER", "TRANSCICION PARA DORMIR");

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include "driver/i2c.h"
 #include "sdkconfig.h"
+#include "si7021.h"
 
 
 // ---------------------------------------------------------------------------
@@ -49,11 +50,11 @@
     #define SI7021_READ_RH          0xF5
 #endif
 
-#if CONFIG_USE_CLOCK_STRETCHING
-    #define SI7021_READ_TEMP        0xE3
-#else
-    #define SI7021_READ_TEMP        0xF3
-#endif
+// #if CONFIG_USE_CLOCK_STRETCHING
+//     #define SI7021_READ_TEMP        0xE3
+// #else
+//     #define SI7021_READ_TEMP        0xF3
+// #endif
 
 #define SI7021_READ_TEMP_PREV_RH    0xE0
 

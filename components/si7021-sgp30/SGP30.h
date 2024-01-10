@@ -80,6 +80,7 @@ typedef struct sgp30_dev {
 } sgp30_dev_t;
 
 
+
 /**
  *  @brief  Setups the hardware and detects a valid SGP30. Initializes I2C
  *          then reads the serialnumber and checks that we are talking to an SGP30.

@@ -1,11 +1,3 @@
-/**
- * @file main.c
- * 
- * @author Renato Freitas
- * 
- * @brief SGP30 Air Quality Sensor Library Example
-*/
-
 #include <stdio.h>
 #include "esp_log.h"
 #include "driver/i2c.h"
@@ -26,44 +18,10 @@
 #define ACK_VAL 0x0                             /*!< I2C ack value */
 #define NACK_VAL 0x1                            /*!< I2C nack value */
 
-
-// menu "SGP30 I2C Peripheral Configuration"
-
-//     menu "I2C Master"
-//         config I2C_MASTER_SCL
-//             int "SCL GPIO Num"
-//             default 22
-//             help
-//                 GPIO number for I2C Master clock line.
-
-//         config I2C_MASTER_SDA
-//             int "SDA GPIO Num"
-//             default 21
-//             help
-//                 GPIO number for I2C Master data line.
-
-//         config I2C_MASTER_PORT_NUM
-//             int "Port Number"
-//             default 0
-//             help
-//                 Port number for I2C Master device.
-
-//         config I2C_MASTER_FREQUENCY
-//             int "Master Frequency"
-//             default 100000
-//             help
-//                 I2C Speed of Master device.
-//     endmenu
-
-// endmenu
-
-
-
-
 #define I2C_MASTER_SCL_IO 22               /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO 21               /*!< gpio number for I2C master data  */
 #define I2C_MASTER_NUM I2C_NUMBER(0) /*!< I2C port number for master dev */
-#define I2C_MASTER_FREQ_HZ 100000        /*!< I2C master clock frequency */
+#define I2C_MASTER_FREQ_HZ 10000  //400000//     /*!< I2C master clock frequency */
 #define I2C_MASTER_TX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 
@@ -80,6 +38,7 @@ esp_err_t i2c_master_driver_initialize(void) {
     conf.scl_io_num = I2C_MASTER_SCL_IO;
     conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
     conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
+    conf.clk_flags = 0;
     
     i2c_param_config(i2c_master_port, &conf);
     return i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
