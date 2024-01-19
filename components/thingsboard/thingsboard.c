@@ -531,3 +531,14 @@ esp_err_t thingsboard_stop() {
         return ESP_FAIL;
     #endif
 }
+
+esp_err_t thingsboard_attributes_send(char *content) {
+   
+    #ifdef CONFIG_USE_COAP
+        return coap_client_attributes_post(content);
+    #elif CONFIG_USE_MQTT
+        return mqtt_send("v1/devices/me/attributes", content, 1);
+    #else
+        return ESP_FAIL;
+    #endif
+}

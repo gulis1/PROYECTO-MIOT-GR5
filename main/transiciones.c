@@ -94,10 +94,12 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_THINGSBOARD_READY:
+
+            ESP_ERROR_CHECK(thingsboard_attributes_send("{'piso': 2, 'aula': 7}"));
             return ESTADO_THINGSBOARD_READY;
         
         case TRANS_THINGSBOARD_UNAVAILABLE:
-            ESP_LOGI(TAG, "ALV");
+            ESP_LOGE(TAG, "No se ha podido conectar a thingsboard.");
             esp_restart();
             break;
         default:

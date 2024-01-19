@@ -24,7 +24,6 @@ void main_task() {
         return;
     }
 
-
     while (true) {
         
         transicion_t transicion;

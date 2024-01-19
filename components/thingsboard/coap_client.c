@@ -397,10 +397,6 @@ esp_err_t coap_client_telemetry_post(char *content) {
     return coap_client_post(content, &optlist_telemetry);
 }
 
-int coap_is_device_token_set() {
-    return DEVICE_TOKEN != NULL;
-}
-
 esp_err_t coap_set_device_token(char *device_token) {
 
     esp_err_t err;
@@ -483,6 +479,16 @@ esp_err_t coap_client_fw_download(unsigned char *pdu_token, int chunk, int chunk
     }
     
     return ESP_OK;        
+}
+
+esp_err_t coap_client_attributes_post(char *content) {
+
+    if (optlist_attributes == NULL) {
+        ESP_LOGE(TAG, "optlist_attributes is null");
+        return ESP_FAIL;
+    }
+
+    return coap_client_post(content, &optlist_attributes);
 }
 
 #endif
