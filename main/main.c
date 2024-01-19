@@ -42,22 +42,22 @@ void main_task() {
             case ESTADO_PROVISIONADO:
                 estado_actual = trans_estado_provisionado(transicion);
                 break;
+            
+            case ESTADO_CALIBRADO:
+                estado_actual = trans_estado_calibrado(transicion);
+                break;
 
             case ESTADO_CONECTADO:
                  estado_actual = trans_estado_conectado(transicion);
                  break;
         
             case ESTADO_HORA_CONFIGURADA:
-                estado_actual=trans_estado_hora_configurada(transicion);
+                estado_actual = trans_estado_hora_configurada(transicion);
                 break;
 
             case ESTADO_THINGSBOARD_READY:
                 estado_actual = trans_estado_thingsboard_ready(transicion);
-                break;
-            
-            case ESTADO_CALIBRADO:
-                estado_actual = trans_estado_calibrado(transicion);
-                break;
+                break;   
     
             default:
                 ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
