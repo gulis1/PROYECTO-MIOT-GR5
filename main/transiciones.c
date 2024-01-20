@@ -21,6 +21,7 @@
 #include "power_mngr.h"
 #include "thingsboard.h"
 #include "bluetooth.h"
+#include "boton.h"
 
 const static char *TAG = "transiciones.c";
 
@@ -144,5 +145,19 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
             return ESTADO_THINGSBOARD_READY;
     }
 }
+
+estado_t trans_estado_to_erase(transicion_t trans){
+
+    switch (trans.tipo) {
+        case TRANS_ERASE_FLASH:
+            ESP_ERROR_CHECK(erase_flash());
+            
+            return ESTADO_SIN_PROVISION; //ALV
+        default:
+            return ESTADO_SIN_PROVISION; //ALV
+        
+    }
+
+}           
 
 

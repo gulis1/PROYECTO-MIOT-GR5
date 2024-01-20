@@ -26,22 +26,26 @@ typedef enum {
     TRANS_WIFI_READY,
     TRANS_WIFI_DISCONECT,
 
-    //transcicion para pasas a sincronizar hora
+    //Transiciones para pasas a sincronizar hora
     TRANS_SINCRONIZAR,
     TRANS_THINGSBOARD_READY,
     TRANS_THINGSBOARD_UNAVAILABLE,
     TRANS_THINGSBOARD_FW_UPDATE,
 
-    //transcicion para para pasar a sensorizar 
+    //Transiciones para para pasar a sensorizar 
     TRANS_CALIBRACION_REALIZADA,
     TRANS_LECTURA_SENSORES,
     TRANS_LECTURA_BLUETOOTH,
 
-    //transcicion para domir
+    //Transiciones para domir
     TRANS_DORMIR,
 
-    //transcicion para estimar aforo
-    TRANS_LECTURA_AFORO //creo que no sirve 
+    //Transiciones para estimar aforo
+    TRANS_LECTURA_AFORO, //creo que no sirve 
+
+    //Transiciones para el erase flash
+    TRANS_ERASE_FLASH
+
 
 } tipo_transicion_t;
 
@@ -64,7 +68,8 @@ void prov_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t 
 void sensores_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void hora_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
-void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data); // se puede eliminar
+void bluetooth_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+void boton_handler (void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 
 // Transiciones
@@ -75,3 +80,4 @@ estado_t trans_estado_calibrado(transicion_t trans);
 estado_t trans_estado_hora_configurada(transicion_t trans);
 estado_t trans_estado_thingsboard_ready(transicion_t trans);
 estado_t trans_estado_calibrado(transicion_t trans);
+estado_t trans_estado_to_erase(transicion_t trans);

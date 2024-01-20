@@ -28,6 +28,7 @@
 #include "thingsboard.h" 
 #include "power_mngr.h"
 #include "bluetooth.h"
+#include "boton.h"
 
 //////////////
 
@@ -197,7 +198,20 @@ void power_manager_handler(void *event_handler_arg, esp_event_base_t event_base,
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
         default:
-            ESP_LOGI("HORA_HANDLER", "Evento desconocido.");
+            ESP_LOGI("POWER_MANAGER_HANDLER", "Evento desconocido.");
+    }
+}
+
+
+void boton_handler (void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data){
+    transicion_t trans;
+    switch (event_id){
+    case BOTON_PRESIONADO:
+        trans.tipo= TRANS_ERASE_FLASH;
+        xQueueSend(fsm_queue, &trans,portMAX_DELAY);
+        break;
+    default:
+        ESP_LOGI("BOTON_HANDLER", "evento desconocido archivo %s linea %d",__FILE__,__LINE__);    
     }
 }
 

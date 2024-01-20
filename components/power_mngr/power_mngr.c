@@ -103,7 +103,4 @@ void deep_sleep() {
 }
 
 
-//TODOANGEL:PUEDEDARSE EL CASO DE QUE QUERAMOS QUE TRABASE DE MADRUGADA YO CREO QUE NO 
-//TODOANGEL: Puede pasarse el esp_err_t err a global
-
 

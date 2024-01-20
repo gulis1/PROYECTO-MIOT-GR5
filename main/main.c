@@ -13,6 +13,7 @@
 #include "power_mngr.h"
 #include "thingsboard.h"
 #include "bluetooth.h"
+#include "boton.h"
 
 const static char* TAG = "main.c";
 
@@ -32,34 +33,41 @@ void main_task() {
             continue;
         }
 
-        switch (estado_actual) {
-
-            case ESTADO_SIN_PROVISION:
-                estado_actual = trans_estado_inicial(transicion);
-                break;
-
-            case ESTADO_PROVISIONADO:
-                estado_actual = trans_estado_provisionado(transicion);
-                break;
+        if (transicion.tipo!=TRANS_ERASE_FLASH){
             
-            case ESTADO_CALIBRADO:
-                estado_actual = trans_estado_calibrado(transicion);
-                break;
+            switch (estado_actual) {
 
-            case ESTADO_CONECTADO:
-                 estado_actual = trans_estado_conectado(transicion);
-                 break;
-        
-            case ESTADO_HORA_CONFIGURADA:
-                estado_actual = trans_estado_hora_configurada(transicion);
-                break;
+                case ESTADO_SIN_PROVISION:
+                    estado_actual = trans_estado_inicial(transicion);
+                    break;
 
-            case ESTADO_THINGSBOARD_READY:
-                estado_actual = trans_estado_thingsboard_ready(transicion);
-                break;   
-    
-            default:
-                ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
+                case ESTADO_PROVISIONADO:
+                    estado_actual = trans_estado_provisionado(transicion);
+                    break;
+                
+                case ESTADO_CALIBRADO:
+                    estado_actual = trans_estado_calibrado(transicion);
+                    break;
+
+                case ESTADO_CONECTADO:
+                    estado_actual = trans_estado_conectado(transicion);
+                    break;
+            
+                case ESTADO_HORA_CONFIGURADA:
+                    estado_actual = trans_estado_hora_configurada(transicion);
+                    break;
+
+                case ESTADO_THINGSBOARD_READY:
+                    estado_actual = trans_estado_thingsboard_ready(transicion);
+                    break;   
+
+                default:
+                    ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
+            
+            }    
+        } else {
+            estado_actual=trans_estado_to_erase(transicion);
+            break;
         }
     }
 }
@@ -77,10 +85,19 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
         return;
     }
+
+
         // Creación del default event loop.
     err = esp_event_loop_create_default();
         if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_event_loop_create_default: %s", esp_err_to_name(err));
+        return;
+    }
+
+     //iniciación boton para el erase_flash
+    err = boton_init(boton_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en boton_init: %s", esp_err_to_name(err));
         return;
     }
 
