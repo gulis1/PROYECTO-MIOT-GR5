@@ -59,7 +59,7 @@ static void fw_update_send_state(char *state) {
 
 static void fw_update_download_chunk(int chunk) {
 
-    esp_err_t err;
+    esp_err_t err = ESP_FAIL;
 
     #ifdef CONFIG_USE_COAP
         
@@ -70,27 +70,20 @@ static void fw_update_download_chunk(int chunk) {
                 break;
         }
 
-        if (err != ESP_OK) {
-            fw_update_send_state("FAILED");
-            ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
-        }
-
     #else
 
         char payload_buffer[16];
         char topic_buffer[128];
         int n = snprintf(topic_buffer, sizeof(topic_buffer), "v2/fw/request/%d/chunk/%d", MQTT_FW_UPDATE_REQUEST_ID, chunk);
         if (n >= sizeof(topic_buffer)) {
-            fw_update_send_state("FAILED");
             ESP_LOGE(TAG, "Failed to download firmware: MQTT topic too long.");
-            return;
+            goto chunk_fail;
         }
 
         n = snprintf(payload_buffer, sizeof(payload_buffer), "%lu", FW_UPDATE_CHUNK_SIZE);
         if (n >= sizeof(topic_buffer)) {
-            fw_update_send_state("FAILED");
             ESP_LOGE(TAG, "Chunk size buffer too small.");
-            return;
+            goto chunk_fail;
         }
 
         for (int i = 0; i < 5; i++) {
@@ -98,7 +91,15 @@ static void fw_update_download_chunk(int chunk) {
             if (err == ESP_OK)
                 break;
         }
+chunk_fail:    
+
     #endif
+
+    if (err != ESP_OK) {
+        fw_update_send_state("FAILED");
+        currently_updating = false;
+        ESP_LOGE(TAG, "Failed to download firmware update chunk %d", chunk);
+    }
 }
 
 static esp_err_t fw_update_downloaded() {
@@ -448,13 +449,7 @@ esp_err_t thingsboard_init(void *handler) {
         return ESP_FAIL;
     #endif
 
-        return ESP_OK;
-}
-
-esp_err_t thingsboard_start() {
-
-    esp_err_t err;
-    const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
+        const esp_partition_t *partition = esp_ota_get_next_update_partition(NULL);
  
     if (partition == NULL) {
         ESP_LOGE(TAG, "Error en esp_ota_get_next_update_partition");
@@ -467,22 +462,28 @@ esp_err_t thingsboard_start() {
         return err;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t thingsboard_start() {
+
     #if CONFIG_USE_MQTT
         return mqtt_start();
     #elif CONFIG_USE_COAP
-        err = coap_client_start();
+        esp_err_t err = coap_client_start();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Error en coap_client_start: %s", esp_err_to_name(err));
             return ESP_FAIL;
         }
 
         if (DEVICE_TOKEN != NULL) {
-
+    
             err = coap_set_device_token(DEVICE_TOKEN);
             if (err != ESP_OK) {
                 ESP_LOGE(TAG, "Error en coap_client_attributes_observe: %s", esp_err_to_name(err));
                 return ESP_FAIL;
             }
+        
             return esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
         }
 
@@ -520,10 +521,23 @@ esp_err_t thingsboard_telemetry_send(char *msg) {
 
 esp_err_t thingsboard_stop() {
 
+    currently_updating = false;
+
     #ifdef CONFIG_USE_COAP
-        return esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
+        return coap_client_stop();
     #elif CONFIG_USE_MQTT
         return mqtt_stop();
+    #else
+        return ESP_FAIL;
+    #endif
+}
+
+esp_err_t thingsboard_attributes_send(char *content) {
+   
+    #ifdef CONFIG_USE_COAP
+        return coap_client_attributes_post(content);
+    #elif CONFIG_USE_MQTT
+        return mqtt_send("v1/devices/me/attributes", content, 1);
     #else
         return ESP_FAIL;
     #endif

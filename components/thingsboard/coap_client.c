@@ -41,6 +41,8 @@ static coap_optlist_t *optlist_attributes = NULL;
 static coap_optlist_t *optlist_firmware = NULL;
 static char *DEVICE_TOKEN = NULL;
 
+static TaskHandle_t coap_io_task;
+
 static void coap_io_callback() {
 
     while (true) {
@@ -296,7 +298,7 @@ esp_err_t coap_client_init(coap_response_handler_t message_handler, char *cert) 
     }
 
     coap_register_response_handler(coap_ctx, message_handler);
-    xTaskCreate(coap_io_callback, "COAP io task", 6144, NULL, 6, NULL);
+    xTaskCreate(coap_io_callback, "COAP io task", 6144, NULL, 6, &coap_io_task);
 
     return ESP_OK;
 }
@@ -336,6 +338,14 @@ esp_err_t coap_client_start() {
         ESP_LOGE(TAG, "coap_new_client_session() failed");
         return ESP_FAIL;
     }
+
+    return ESP_OK;
+}
+
+esp_err_t coap_client_stop() {
+
+    coap_session_release(coap_session);
+    coap_session = NULL;
 
     return ESP_OK;
 }
@@ -395,24 +405,26 @@ esp_err_t coap_set_device_token(char *device_token) {
         ESP_LOGE(TAG, "coap_set_device_token: device token must not be null.");
         return ESP_ERR_INVALID_ARG;
     }
+    // Puede ser que el device token ya estuviera puesto.
+    if (DEVICE_TOKEN == NULL) {
+        DEVICE_TOKEN = strdup(device_token);
+        err = coap_generate_telemetry_optlist();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en coap_generate_telemetry_optlist: %s", esp_err_to_name(err));
+            return err;
+        }
 
-    DEVICE_TOKEN = strdup(device_token);
-    err = coap_generate_telemetry_optlist();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en coap_generate_telemetry_optlist: %s", esp_err_to_name(err));
-        return err;
-    }
+        err = coap_generate_attributes_optlist();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en coap_generate_attributes_optlist: %s", esp_err_to_name(err));
+            return err;
+        }
 
-    err = coap_generate_attributes_optlist();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en coap_generate_attributes_optlist: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    err = coap_generate_firmware_optlist();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Error en coap_generate_firmware_optlist: %s", esp_err_to_name(err));
-        return err;
+        err = coap_generate_firmware_optlist();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Error en coap_generate_firmware_optlist: %s", esp_err_to_name(err));
+            return err;
+        }
     }
 
     err = coap_client_attributes_observe();
@@ -467,6 +479,16 @@ esp_err_t coap_client_fw_download(unsigned char *pdu_token, int chunk, int chunk
     }
     
     return ESP_OK;        
+}
+
+esp_err_t coap_client_attributes_post(char *content) {
+
+    if (optlist_attributes == NULL) {
+        ESP_LOGE(TAG, "optlist_attributes is null");
+        return ESP_FAIL;
+    }
+
+    return coap_client_post(content, &optlist_attributes);
 }
 
 #endif
