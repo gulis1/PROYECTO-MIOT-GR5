@@ -15,5 +15,5 @@
     "mqtt_api.h": "c",
     "thingsboard.h": "c"
   },
-  "idf.portWin": "COM4"
+  "idf.portWin": "COM5"
 }
