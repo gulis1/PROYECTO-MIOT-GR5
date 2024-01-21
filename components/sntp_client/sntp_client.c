@@ -56,7 +56,7 @@ static void sincronizacion_hora() {
     ESP_LOGI(TAG, "La fecha y hora actual de Madrid es: %s", strftime_buf);
 
     //event post
-    ESP_ERROR_CHECK(esp_event_post(HORA_CONFIG_EVENT,HORA_CONFIGURADA, NULL, sizeof(NULL), portMAX_DELAY));
+    ESP_ERROR_CHECK(esp_event_post(HORA_CONFIG_EVENT, HORA_CONFIGURADA, NULL, sizeof(NULL), portMAX_DELAY));
 
     vTaskDelete(NULL);
 }

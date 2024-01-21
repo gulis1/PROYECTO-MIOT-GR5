@@ -502,3 +502,7 @@ esp_err_t init_provision(void *event_handler) {
     };
     return ESP_OK;    
 }
+
+prov_info_t* get_wifi_info() {
+    return &PROVISION_INFO;
+}

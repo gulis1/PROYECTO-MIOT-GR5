@@ -30,16 +30,8 @@ estado_t trans_estado_inicial(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_PROVISION:
-            esp_err_t err;
-            prov_info_t *prov = (prov_info_t*) trans.dato;
-            
-            ESP_ERROR_CHECK(wifi_connect(prov->wifi_ssid, prov->wifi_pass));
-            
-            err= bluetooth_init_finish_provision(bluetooth_handler);
-            if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Error en inicializar Bluetooth: %s", esp_err_to_name(err));
-            }
-
+            ESP_ERROR_CHECK(bluetooth_init_finish_provision(bluetooth_handler));
+            ESP_ERROR_CHECK(start_calibracion());
             return ESTADO_PROVISIONADO;
             
         default:
@@ -52,14 +44,32 @@ estado_t trans_estado_provisionado(transicion_t trans) {
 
     switch (trans.tipo) {
 
-        case TRANS_WIFI_READY:
-            /*INICAR MEDICION DE TEMPERATURA, HUMEDAD Y AIRE*/
-            ESP_ERROR_CHECK(time_sync_start());
+        case TRANS_CALIBRACION_REALIZADA:
 
-            return ESTADO_CONECTADO;
+            ESP_ERROR_CHECK(estimacion_de_aforo());
+            ESP_ERROR_CHECK(sensores_start());
+            
+            prov_info_t *wifi_info = get_wifi_info();
+            ESP_ERROR_CHECK(wifi_connect(wifi_info->wifi_ssid, wifi_info->wifi_pass));
+            return ESTADO_CALIBRADO;
             
         default:
             return ESTADO_PROVISIONADO;
+    }
+}
+
+estado_t trans_estado_calibrado(transicion_t trans) {
+
+    switch (trans.tipo) {
+
+        case TRANS_WIFI_READY:
+            
+            ESP_ERROR_CHECK(time_sync_start());
+            return ESTADO_CONECTADO;
+        
+        default:
+            return ESTADO_CALIBRADO;
+
     }
 }
 
@@ -69,11 +79,12 @@ estado_t trans_estado_conectado(transicion_t trans) {
 
         case TRANS_SINCRONIZAR:
             ESP_LOGI(TAG,"sincronizacion realizada");
-            thingsboard_start();
+            ESP_ERROR_CHECK(power_manager_start());
+            ESP_ERROR_CHECK(thingsboard_start());
             return ESTADO_HORA_CONFIGURADA;
             
         default:
-        return ESTADO_CONECTADO;
+            return ESTADO_CONECTADO;
 
     }
 }
@@ -83,36 +94,20 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
     switch (trans.tipo) {
 
         case TRANS_THINGSBOARD_READY:
-            ESP_ERROR_CHECK(start_calibracion());
+
+            ESP_ERROR_CHECK(thingsboard_attributes_send("{'piso': 2, 'aula': 7}"));
             return ESTADO_THINGSBOARD_READY;
         
         case TRANS_THINGSBOARD_UNAVAILABLE:
-            ESP_LOGI(TAG, "ALV");
+            ESP_LOGE(TAG, "No se ha podido conectar a thingsboard.");
             esp_restart();
             break;
         default:
-            return ESTADO_CONECTADO;
+            return ESTADO_HORA_CONFIGURADA;
     }
 }
-
 
 estado_t trans_estado_thingsboard_ready(transicion_t trans) {
-
-    switch (trans.tipo) {
-
-        case TRANS_CALIBRACION_REALIZADA:
-            ESP_ERROR_CHECK(estimacion_de_aforo());
-            ESP_ERROR_CHECK(sensores_start());
-            ESP_ERROR_CHECK(power_manager_start());
-            ESP_LOGI(TAG, "Calibración completada");
-            return ESTADO_CALIBRADO;
-            
-        default:
-            return ESTADO_THINGSBOARD_READY;
-    }
-}
-
-estado_t trans_estado_calibrado(transicion_t trans) {
 
     char json_buffer[128];
     switch (trans.tipo) {
@@ -120,10 +115,9 @@ estado_t trans_estado_calibrado(transicion_t trans) {
         case TRANS_LECTURA_SENSORES:
 
             data_sensores_t *lecturas = trans.dato;
-            sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d}", lecturas->temp_dato, lecturas->CO2_dato);
+            sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d, 'TVOC': %d}", lecturas->temp_dato, lecturas->CO2_dato, lecturas->TVOC_dato);
             thingsboard_telemetry_send(json_buffer);
-            return ESTADO_CALIBRADO;
-
+            return ESTADO_THINGSBOARD_READY;
 
         case TRANS_LECTURA_BLUETOOTH:
             
@@ -131,7 +125,11 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             sprintf(json_buffer, "{'estimacion aforo': %d}", aforo);
             thingsboard_telemetry_send(json_buffer);
             ESP_LOGI(TAG,"%s", json_buffer);
+            return ESTADO_THINGSBOARD_READY;
 
+        case TRANS_WIFI_DISCONECT:
+            ESP_LOGW(TAG, "Se ha caido el wifi");
+            thingsboard_stop();
             return ESTADO_CALIBRADO;
 
         case TRANS_THINGSBOARD_FW_UPDATE:
@@ -143,7 +141,7 @@ estado_t trans_estado_calibrado(transicion_t trans) {
             __unreachable();
 
         default:
-            return ESTADO_CALIBRADO;
+            return ESTADO_THINGSBOARD_READY;
     }
 }
 

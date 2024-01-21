@@ -37,10 +37,8 @@ static const char *TAG = "WIFI";
 
 static int s_retry_num = 0;
 
+static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
 
-static void event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data)
-{
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } 
@@ -48,7 +46,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
             esp_wifi_connect();
-            s_retry_num++;
+            // s_retry_num++; TODO: ver que hacemos con esto.
             ESP_LOGI(TAG, "retry to connect to the AP");
         } 
     } 
