@@ -6,6 +6,9 @@
 typedef struct {
     char* wifi_ssid;
     char* wifi_pass;
+    char* data_piso;
+    char* data_aula;
+    char* data_url;
 } prov_info_t;
 
 enum {
