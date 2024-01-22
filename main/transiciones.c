@@ -12,6 +12,7 @@
 
 #include <esp_log.h>
 #include <esp_err.h>
+#include <cJSON.h>
 
 #include "main.h"
 #include "wifi.h"
@@ -96,7 +97,15 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
 
         case TRANS_THINGSBOARD_READY:
 
-            ESP_ERROR_CHECK(thingsboard_attributes_send("{'piso': 2, 'aula': 7}"));
+            prov_info_t *prov_info = get_wifi_info();
+            cJSON *json = cJSON_CreateObject();
+            ESP_LOGI(TAG, "piso: %s", prov_info->data_piso);
+            cJSON_AddNumberToObject(json, "piso", (double) atoff(prov_info->data_piso));
+            cJSON_AddStringToObject(json, "aula", prov_info->data_aula);
+            char *payload = cJSON_PrintUnformatted(json);
+            ESP_ERROR_CHECK(thingsboard_attributes_send(payload));
+            cJSON_free(payload);
+            cJSON_Delete(json);
             return ESTADO_THINGSBOARD_READY;
         
         case TRANS_THINGSBOARD_UNAVAILABLE:
@@ -146,18 +155,16 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
     }
 }
 
-estado_t trans_estado_to_erase(transicion_t trans){
+void trans_estado_to_erase(transicion_t trans){
 
     switch (trans.tipo) {
         case TRANS_ERASE_FLASH:
             ESP_ERROR_CHECK(erase_flash());
-            
-            return ESTADO_SIN_PROVISION; //ALV
+            break;
         default:
-            return ESTADO_SIN_PROVISION; //ALV
+            break;
         
     }
-
 }           
 
 

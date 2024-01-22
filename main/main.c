@@ -33,42 +33,40 @@ void main_task() {
             continue;
         }
 
-        if (transicion.tipo!=TRANS_ERASE_FLASH){
-            
-            switch (estado_actual) {
-
-                case ESTADO_SIN_PROVISION:
-                    estado_actual = trans_estado_inicial(transicion);
-                    break;
-
-                case ESTADO_PROVISIONADO:
-                    estado_actual = trans_estado_provisionado(transicion);
-                    break;
-                
-                case ESTADO_CALIBRADO:
-                    estado_actual = trans_estado_calibrado(transicion);
-                    break;
-
-                case ESTADO_CONECTADO:
-                    estado_actual = trans_estado_conectado(transicion);
-                    break;
-            
-                case ESTADO_HORA_CONFIGURADA:
-                    estado_actual = trans_estado_hora_configurada(transicion);
-                    break;
-
-                case ESTADO_THINGSBOARD_READY:
-                    estado_actual = trans_estado_thingsboard_ready(transicion);
-                    break;   
-
-                default:
-                    ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
-            
-            }    
-        } else {
-            estado_actual=trans_estado_to_erase(transicion);
-            break;
+        if (transicion.tipo == TRANS_ERASE_FLASH) {
+            trans_estado_to_erase(transicion);
+            esp_restart();
         }
+      
+        switch (estado_actual) {
+
+            case ESTADO_SIN_PROVISION:
+                estado_actual = trans_estado_inicial(transicion);
+                break;
+
+            case ESTADO_PROVISIONADO:
+                estado_actual = trans_estado_provisionado(transicion);
+                break;
+            
+            case ESTADO_CALIBRADO:
+                estado_actual = trans_estado_calibrado(transicion);
+                break;
+
+            case ESTADO_CONECTADO:
+                estado_actual = trans_estado_conectado(transicion);
+                break;
+        
+            case ESTADO_HORA_CONFIGURADA:
+                estado_actual = trans_estado_hora_configurada(transicion);
+                break;
+
+            case ESTADO_THINGSBOARD_READY:
+                estado_actual = trans_estado_thingsboard_ready(transicion);
+                break;   
+
+            default:
+                ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
+        }    
     }
 }
 

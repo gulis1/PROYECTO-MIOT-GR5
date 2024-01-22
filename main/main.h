@@ -80,4 +80,4 @@ estado_t trans_estado_calibrado(transicion_t trans);
 estado_t trans_estado_hora_configurada(transicion_t trans);
 estado_t trans_estado_thingsboard_ready(transicion_t trans);
 estado_t trans_estado_calibrado(transicion_t trans);
-estado_t trans_estado_to_erase(transicion_t trans);
+void trans_estado_to_erase(transicion_t trans);

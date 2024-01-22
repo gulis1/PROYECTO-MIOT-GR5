@@ -53,7 +53,7 @@ static void fw_update_send_state(char *state) {
     char *payload = cJSON_PrintUnformatted(json);
     thingsboard_telemetry_send(payload);
 
-    cJSON_free(json);
+    cJSON_Delete(json);
     cJSON_free(payload);
 }
 
@@ -185,7 +185,7 @@ static esp_err_t parse_received_device_token(char* response, int response_len) {
     ESP_LOGI(TAG, "Saved received provision token in NVS");
     nvs_close(nvshandle);
 
-    cJSON_free(response_json);
+    cJSON_Delete(response_json);
     return ESP_OK;
 }
 
@@ -216,7 +216,7 @@ static esp_err_t parse_attributes(cJSON *json) {
             cJSON_AddStringToObject(json_updated, "fw_state", "UPDATED");
             char *payload = cJSON_PrintUnformatted(json_updated);
             thingsboard_telemetry_send(payload);
-            cJSON_free(json_updated);
+            cJSON_Delete(json_updated);
             cJSON_free(payload);
         }
     }
@@ -263,7 +263,7 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 vTaskDelay(2000 / portTICK_PERIOD_MS); // TODO: revisar esta chapuza.
 
                 mqtt_send("/provision/request", json_payload, 1);
-                cJSON_free(json);
+                cJSON_Delete(json);
                 cJSON_free(json_payload);
                 ESP_LOGI(TAG, "Enviada solicitud de provisionamiento");
             }
@@ -312,7 +312,7 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 else
                     parse_attributes(json);
 
-                cJSON_free(json);
+                cJSON_Delete(json);
             
             }
             else {
@@ -383,7 +383,7 @@ static coap_response_t coap_handler(coap_session_t *session,
                 }
 
                 parse_attributes(json);
-                cJSON_free(json);
+                cJSON_Delete(json);
             }
 
         }

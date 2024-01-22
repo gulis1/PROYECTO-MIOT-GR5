@@ -243,31 +243,6 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
     return ESP_OK;
 }
 
-static void wifi_prov_print_qr(const char *name, const char *username, const char *pop, const char *transport)
-{
-    if (!name || !transport) {
-        ESP_LOGW(TAG, "Cannot generate QR code payload. Data missing.");
-        return;
-    }
-    char payload[150] = {0};
-    if (pop) {
-#if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_1
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, pop, transport);
-#elif CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"username\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, username, pop, transport);
-#endif
-    } else {
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, transport);
-    }
-
-}
-
 void start_provisioning()
 {
  
@@ -468,7 +443,7 @@ esp_err_t init_provision(void *event_handler) {
     }
 
     err = nvs_get_str(nvsHandle, "wifi_ssid", NULL, &len);
-    if (/*err == ESP_OK*/false) {
+    if (err == ESP_OK) {
 
         // Aquí se entra si se encuentran datos de provisionamiento
         // en el NVS.
@@ -483,7 +458,7 @@ esp_err_t init_provision(void *event_handler) {
         void *data = &PROVISION_INFO;
         esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
     } 
-    else if (/*err == ESP_ERR_NVS_NOT_FOUND*/true) {
+    else if (err == ESP_ERR_NVS_NOT_FOUND) {
         
         // Aquí se entra si no se encuentran datos de provisionamiento
         // en el NVS.
