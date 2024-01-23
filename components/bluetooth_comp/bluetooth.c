@@ -584,7 +584,7 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 
 
 esp_err_t estimacion_de_aforo(){
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  8 * 1000000)); //CONFIG_PERIODO_TEMP
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  300 * 1000000)); //CONFIG_PERIODO_TEMP
     return ESP_OK;
 }
 
