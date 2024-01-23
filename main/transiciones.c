@@ -125,7 +125,7 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
         case TRANS_LECTURA_SENSORES:
 
             data_sensores_t *lecturas = trans.dato;
-            sprintf(json_buffer, "{'temperatura': %.3f, 'eCO2': %d, 'TVOC': %d}", lecturas->temp_dato, lecturas->CO2_dato, lecturas->TVOC_dato);
+            sprintf(json_buffer, "{'temperatura': %.3f, humedad: %.3f, 'eCO2': %d, 'TVOC': %d}", lecturas->temp_dato,lecturas->hum_dato, lecturas->CO2_dato, lecturas->TVOC_dato);
             thingsboard_telemetry_send(json_buffer);
             return ESTADO_THINGSBOARD_READY;
 

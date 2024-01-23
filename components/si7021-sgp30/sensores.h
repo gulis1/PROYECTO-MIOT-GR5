@@ -1,6 +1,6 @@
 #ifndef SENSORES 
 #define SENSORES
-//TODOANGEL: Se puede poner que 
+ 
 #include <stdio.h>
 #include <string.h>
 
@@ -25,7 +25,8 @@ ESP_EVENT_DECLARE_BASE(SENSORES_EVENT);
 typedef struct {
     uint16_t TVOC_dato;
     uint16_t CO2_dato;
-    float temp_dato; 
+    float temp_dato;
+    float hum_dato; 
 } data_sensores_t;
 
 
@@ -34,7 +35,7 @@ esp_err_t sensores_init(void *sensores_handler);
 esp_err_t start_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
-//void hora(void); si funciona eliminarlo
+
 int data_json ();
 
 

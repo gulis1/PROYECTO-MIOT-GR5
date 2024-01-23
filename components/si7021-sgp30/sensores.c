@@ -43,14 +43,17 @@ char* data_sensores_to_json_string(data_sensores_t* info) {
 static void lectura_sensores_callback(){
 
     float temp;
+    float hum;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
+    readHumidity(0,&hum);
     // ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;
     DATA_SENSORES.TVOC_dato = main_sgp30_sensor.TVOC;
     DATA_SENSORES.temp_dato = temp;
+    DATA_SENSORES.hum_dato=hum;
 
     void *dato_sensores = &DATA_SENSORES;
 
