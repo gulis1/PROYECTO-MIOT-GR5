@@ -45,17 +45,17 @@ esp_err_t power_manager_init(void *hora_handler) {
     esp_err_t err;
 
     //configuracion parametros
-    // esp_pm_config_t power_config = {
-    //     .max_freq_mhz=240,
-    //     .min_freq_mhz=80,
-    //     .light_sleep_enable=true
-    // };
+    esp_pm_config_t power_config = {
+        .max_freq_mhz=160,
+        .min_freq_mhz=80,
+        .light_sleep_enable=true
+    };
 
-    // esp_err_t ret = esp_pm_configure(&power_config);
-    // if (ret != ESP_OK) {
-    //     ESP_LOGE("Power Manager", "init power manager falló: %s", esp_err_to_name(ret));
-    //     return ret;
-    // }
+    esp_err_t ret = esp_pm_configure(&power_config);
+    if (ret != ESP_OK) {
+        ESP_LOGE("Power Manager", "init power manager falló: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
     const esp_timer_create_args_t timer_args = {
         .callback = callback_reloj,
