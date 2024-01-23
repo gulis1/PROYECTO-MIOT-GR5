@@ -170,7 +170,7 @@ static esp_err_t parse_received_device_token(char* response, int response_len) {
         return ESP_FAIL;
     }
     
-    DEVICE_TOKEN = cJSON_GetStringValue(token_object);
+    DEVICE_TOKEN = strdup(cJSON_GetStringValue(token_object));
     if (DEVICE_TOKEN == NULL) {
         ESP_LOGE(TAG, "Invalid provision JSON received");
         return ESP_FAIL;
