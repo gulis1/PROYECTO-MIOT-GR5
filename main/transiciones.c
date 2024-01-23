@@ -33,6 +33,7 @@ estado_t trans_estado_inicial(transicion_t trans) {
 
         case TRANS_PROVISION:
             ESP_ERROR_CHECK(bluetooth_init_finish_provision(bluetooth_handler));
+            stop_provisioning();
             ESP_ERROR_CHECK(start_calibracion());
             return ESTADO_PROVISIONADO;
             
