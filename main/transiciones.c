@@ -33,6 +33,7 @@ estado_t trans_estado_inicial(transicion_t trans) {
 
         case TRANS_PROVISION:
             ESP_ERROR_CHECK(bluetooth_init_finish_provision(bluetooth_handler));
+            stop_provisioning();
             ESP_ERROR_CHECK(start_calibracion());
             return ESTADO_PROVISIONADO;
             
@@ -99,7 +100,6 @@ estado_t trans_estado_hora_configurada(transicion_t trans) {
 
             prov_info_t *prov_info = get_wifi_info();
             cJSON *json = cJSON_CreateObject();
-            ESP_LOGI(TAG, "piso: %s", prov_info->data_piso);
             cJSON_AddNumberToObject(json, "piso", (double) atoff(prov_info->data_piso));
             cJSON_AddStringToObject(json, "aula", prov_info->data_aula);
             char *payload = cJSON_PrintUnformatted(json);
