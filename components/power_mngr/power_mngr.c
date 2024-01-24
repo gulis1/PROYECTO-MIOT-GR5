@@ -12,10 +12,9 @@ ESP_EVENT_DEFINE_BASE(DEEP_SLEEP_EVENT);
 static const char *TAG = "Power manager";
 static esp_timer_handle_t timer_reloj;
 
-// static int segundos_iniciales = CONFIG_HORA_INICIO * 3600 + CONFIG_MINUTO_INICIO * 60;
-// static int segundos_finales = CONFIG_HORA_FINAL * 3600 + CONFIG_MINUTO_FINAL * 60;
-static int segundos_iniciales = 1 * 3600 + 26 * 60;
-static int segundos_finales = 1 * 3600 + 29 * 60;
+static int segundos_iniciales = CONFIG_HORA_INICIO * 3600 + CONFIG_MINUTO_INICIO * 60;
+static int segundos_finales = CONFIG_HORA_FINAL * 3600 + CONFIG_MINUTO_FINAL * 60;
+
 
 static int hora_actual_segundos() {
 
