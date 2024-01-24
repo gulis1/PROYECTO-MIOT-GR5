@@ -31,10 +31,33 @@ extern const uint8_t cert_pem_end[]   asm("_binary_cert_pem_end");
 #ifdef CONFIG_USE_COAP
 uint8_t COAP_TOKEN_FW_UPDATE[8] = {0};
 uint8_t COAP_TOKEN_PROVISION[8] = {0};
+uint8_t COAP_TOKEN_ATTRIBUTES[8] = {0};
+uint8_t COAP_TOKEN_RPC[8] = {0};
 #else
 int MQTT_FW_UPDATE_REQUEST_ID = 1;
 #endif
 
+/*
+    COSAS RPC
+*/
+
+esp_err_t rpc_request_received(char *request_data, size_t request_len) {
+
+    cJSON *json = cJSON_ParseWithLength(request_data, request_len);
+    if (json == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    cJSON *method_json = cJSON_GetObjectItem(json, "method");
+    if (method_json == NULL) {
+        cJSON_Delete(json);
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    void *event_data = &json;
+    esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_RPC_REQUEST, event_data, sizeof(event_data), portMAX_DELAY);
+    return ESP_OK;        
+}
 
 /*
     COSAS OTA
@@ -360,7 +383,7 @@ static coap_response_t coap_handler(coap_session_t *session,
                     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_UNAVAILABLE, NULL, 0, portMAX_DELAY);
                 else {
                     ESP_LOGI(TAG, "Received device token: %s", DEVICE_TOKEN);
-                    if (coap_set_device_token(DEVICE_TOKEN) != ESP_OK)
+                    if (coap_set_device_token(DEVICE_TOKEN, COAP_TOKEN_ATTRIBUTES, COAP_TOKEN_RPC) != ESP_OK)
                         ESP_LOGE(TAG, "Error en coap_set_device_token");
                     else 
                         esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
@@ -371,9 +394,8 @@ static coap_response_t coap_handler(coap_session_t *session,
                 fw_update_chunk_received((char*) data, data_len);
             }
 
-            else {
+            else if (memcmp(token.s, COAP_TOKEN_ATTRIBUTES, token.length) == 0) {
 
-                // Suponemos que se trata de un reporte de cambio en los atributos.
                 ESP_LOGI(TAG, "Received COAP message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
 
                 cJSON *json = cJSON_ParseWithLength((const char*)data, data_len);
@@ -384,6 +406,15 @@ static coap_response_t coap_handler(coap_session_t *session,
 
                 parse_attributes(json);
                 cJSON_Delete(json);
+            }
+
+            else if (memcmp(token.s, COAP_TOKEN_RPC, token.length) == 0) {
+                rpc_request_received((char*)data, data_len);
+                ESP_LOGI(TAG, "Received COAP RPC message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
+            }
+
+            else {
+                ESP_LOGI(TAG, "Unknown COAP message received.");
             }
 
         }
@@ -478,9 +509,9 @@ esp_err_t thingsboard_start() {
 
         if (DEVICE_TOKEN != NULL) {
     
-            err = coap_set_device_token(DEVICE_TOKEN);
+            err = coap_set_device_token(DEVICE_TOKEN, COAP_TOKEN_ATTRIBUTES, COAP_TOKEN_RPC);
             if (err != ESP_OK) {
-                ESP_LOGE(TAG, "Error en coap_client_attributes_observe: %s", esp_err_to_name(err));
+                ESP_LOGE(TAG, "Error en coap_set_device_token: %s", esp_err_to_name(err));
                 return ESP_FAIL;
             }
         

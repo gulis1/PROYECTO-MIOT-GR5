@@ -26,6 +26,7 @@
 
 const static char *TAG = "transiciones.c";
 
+void process_rpc_request(cJSON *request);
 
 estado_t trans_estado_inicial(transicion_t trans) {
 
@@ -137,10 +138,15 @@ estado_t trans_estado_thingsboard_ready(transicion_t trans) {
             ESP_LOGI(TAG,"%s", json_buffer);
             return ESTADO_THINGSBOARD_READY;
 
+        case TRANS_THINGSBOARD_RPC_REQUEST:
+            cJSON *json = trans.dato;
+            process_rpc_request(json);
+            return ESTADO_THINGSBOARD_READY;
+
         case TRANS_WIFI_DISCONECT:
             ESP_LOGW(TAG, "Se ha caido el wifi");
             thingsboard_stop();
-            return ESTADO_CALIBRADO;
+            return ESTADO_CALIBRADO;            
 
         case TRANS_THINGSBOARD_FW_UPDATE:
             esp_restart();
@@ -165,6 +171,23 @@ void trans_estado_to_erase(transicion_t trans){
             break;
         
     }
-}           
+}
+
+
+void process_rpc_request(cJSON *request) {
+
+    cJSON *method = cJSON_GetObjectItem(request, "method");
+    if (method == NULL) {
+        cJSON_Delete(request);
+        return;
+    }
+
+    char *method_name = cJSON_GetStringValue(method);
+    if (strcmp(method_name, "toggle_parametros_ambientales") == 0) {
+        ESP_LOGW(TAG, "TODO");
+    }
+
+    cJSON_Delete(request);
+}
 
 

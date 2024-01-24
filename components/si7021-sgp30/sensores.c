@@ -6,9 +6,6 @@
 #include <driver/i2c.h>
 #include <esp_event.h>
 #include <esp_timer.h>
-#include "main.h"
-#include "cJSON.h"
-//#include "configuracion_hora.h"
 
 const static char* TAG = "Lectura de sensores";
 
@@ -22,22 +19,6 @@ static data_sensores_t DATA_SENSORES;
 
 //Declaramos la familia de eventos
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
-
-
-char* data_sensores_to_json_string(data_sensores_t* info) {
-
-    cJSON *root = cJSON_CreateObject();
-
-     /// la idea es devolver un objeto json 
-    cJSON_AddNumberToObject(root,"temperatura",info->temp_dato);
-    cJSON_AddNumberToObject(root,"eCO2",info->CO2_dato);
-    cJSON_AddNumberToObject(root,"TVOC",info->TVOC_dato);
-
-    char* json_string = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-
-    return json_string;
-}
 
 
 static void lectura_sensores_callback(){

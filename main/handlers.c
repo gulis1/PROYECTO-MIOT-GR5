@@ -29,7 +29,7 @@
 #include "power_mngr.h"
 #include "bluetooth.h"
 #include "boton.h"
-
+#include "cJSON.h"
 //////////////
 
 // Cola de transiciones para la máquina de estados.
@@ -121,6 +121,13 @@ void thingsboard_handler(void *event_handler_arg, esp_event_base_t event_base, i
 
         case THINGSBOARD_FW_UPDATE_READY:
             trans.tipo = TRANS_THINGSBOARD_FW_UPDATE;
+            xQueueSend(fsm_queue, &trans, portMAX_DELAY);
+            break;
+
+        case THINGSBOARD_RPC_REQUEST:
+            cJSON *request = *(cJSON**) event_data;
+            trans.tipo = TRANS_THINGSBOARD_RPC_REQUEST;
+            trans.dato = request;
             xQueueSend(fsm_queue, &trans, portMAX_DELAY);
             break;
 
