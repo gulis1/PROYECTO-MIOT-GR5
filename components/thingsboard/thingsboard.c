@@ -41,12 +41,11 @@ int MQTT_FW_UPDATE_REQUEST_ID = 1;
     COSAS RPC
 */
 
-esp_err_t rpc_request_received(char *request_data, size_t request_len) {
+esp_err_t rpc_request_received(cJSON *json) {
 
-    cJSON *json = cJSON_ParseWithLength(request_data, request_len);
-    if (json == NULL) {
-        return ESP_ERR_INVALID_ARG;
-    }
+    char *prueba = cJSON_Print(json);
+    ESP_LOGI(TAG, "%s", prueba);
+    free(prueba);
 
     cJSON *method_json = cJSON_GetObjectItem(json, "method");
     if (method_json == NULL) {
@@ -243,8 +242,18 @@ static esp_err_t parse_attributes(cJSON *json) {
             cJSON_free(payload);
         }
     }
+
+    // cJSON *periodo_sensores = cJSON_GetObjectItem(json, "periodo_sensores");
+    // if (periodo_sensores != NULL) {
+    //     // Ñapa. (Generamos una llamada de RPC para actualizar el periodo)
+    //     cJSON *rpc_sensores = cJSON_CreateObject();
+    //     cJSON_AddStringToObject(rpc_sensores, "method", "sensoresSetPeriodo");
+    //     cJSON_AddNumberToObject(rpc_sensores, "params", cJSON_GetNumberValue(periodo_sensores));
+    //     void *event_data = &rpc_sensores;
+    //     esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_RPC_REQUEST, event_data, sizeof(event_data), portMAX_DELAY);
+    // }
     
-    // Al recibir datos de thingsboard marcamos la actualización como válida.
+    // Al recibir datos de thingsboard marcamos la (posible) actualización como válida.
     ESP_ERROR_CHECK(esp_ota_mark_app_valid_cancel_rollback());
 
     return ESP_OK;
@@ -294,6 +303,7 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 // Ya estamos provisionados.
                 mqtt_subscribe("v1/devices/me/attributes");
                 mqtt_subscribe("v2/fw/response/+/chunk/+");
+                mqtt_subscribe("v1/devices/me/rpc/request/+");
                 esp_event_post(THINGSBOARD_EVENT, THINGSBOARD_EVENT_READY, NULL, 0, portMAX_DELAY);
             }
             break;
@@ -338,7 +348,19 @@ static void mqtt_handler(void *event_handler_arg, esp_event_base_t event_base, i
                 cJSON_Delete(json);
             
             }
+
+            else if (strncmp(mqtt_event->topic, "v1/devices/me/rpc/request", 25) == 0) {
+                
+                
+                char *topic = strndup(mqtt_event->topic, mqtt_event->topic_len + 1);
+                cJSON *json = cJSON_ParseWithLength(mqtt_event->data, mqtt_event->data_len);
+                cJSON_AddNumberToObject(json, "id", atoi((char*) topic + 26));
+                free(topic);                
+                rpc_request_received(json);
+            }
+
             else {
+                
                 ESP_LOGI(TAG, "Tamaño mensaje MQTT %d", mqtt_event->data_len);
                 fw_update_chunk_received(mqtt_event->data, mqtt_event->data_len);
             }
@@ -409,7 +431,8 @@ static coap_response_t coap_handler(coap_session_t *session,
             }
 
             else if (memcmp(token.s, COAP_TOKEN_RPC, token.length) == 0) {
-                rpc_request_received((char*)data, data_len);
+                cJSON *json = cJSON_ParseWithLength((char*)data, data_len);
+                rpc_request_received(json);
                 ESP_LOGI(TAG, "Received COAP RPC message (%d bytes):\n%.*s\n", data_len, (int)data_len, data);
             }
 
@@ -569,6 +592,20 @@ esp_err_t thingsboard_attributes_send(char *content) {
         return coap_client_attributes_post(content);
     #elif CONFIG_USE_MQTT
         return mqtt_send("v1/devices/me/attributes", content, 1);
+    #else
+        return ESP_FAIL;
+    #endif
+}
+
+esp_err_t thingsboard_send_rpc_response(int id, char *response) {
+
+    #ifdef CONFIG_USE_COAP
+        return coap_client_send_rpc_response(id, response);
+    #elif CONFIG_USE_MQTT
+        char buf[64];
+        snprintf(buf, sizeof(buf), "v1/devices/me/rpc/response/%d", id);
+        ESP_LOGI(TAG, "PROBANDO: %s", buf);
+        return mqtt_send(buf, response, 1);
     #else
         return ESP_FAIL;
     #endif

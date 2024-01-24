@@ -579,10 +579,19 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 }
 
 esp_err_t estimacion_de_aforo() {
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  300 * 1000000)); //CONFIG_PERIODO_TEMP
-    return ESP_OK;
+
+    esp_err_t err = esp_timer_start_periodic(periodic_timer_bluetooth,  5 * 1000000);
+    return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
 }
 
+esp_err_t aforo_stop() {
+    esp_err_t err = esp_timer_stop(periodic_timer_bluetooth);
+    return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
+}
+
+int aforo_activo() {
+    return esp_timer_is_active(periodic_timer_bluetooth);
+}
 
 
 

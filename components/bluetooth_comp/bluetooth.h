@@ -28,5 +28,7 @@ ESP_EVENT_DECLARE_BASE(BLUETOOTH_EVENT);
 
 esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler);
 esp_err_t estimacion_de_aforo();
+esp_err_t aforo_stop();
+int aforo_activo();
 
 #endif

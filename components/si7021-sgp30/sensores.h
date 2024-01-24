@@ -29,14 +29,12 @@ typedef struct {
     float hum_dato; 
 } data_sensores_t;
 
-
-
 esp_err_t sensores_init(void *sensores_handler);
 esp_err_t start_calibracion();
 esp_err_t sensores_start();
 esp_err_t sensores_stop();
-
-int data_json ();
+esp_err_t sensores_set_periodo(int p);
+int sensores_get_periodo();
 
 
 #endif

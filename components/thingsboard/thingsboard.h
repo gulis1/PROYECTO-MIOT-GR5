@@ -16,5 +16,6 @@ esp_err_t thingsboard_start();
 esp_err_t thingsboard_stop();
 esp_err_t thingsboard_attributes_send(char *content);
 esp_err_t thingsboard_telemetry_send(char *msg);
+esp_err_t thingsboard_send_rpc_response(int id, char *response);
 
 #endif

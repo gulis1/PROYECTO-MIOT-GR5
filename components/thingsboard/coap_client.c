@@ -244,7 +244,6 @@ static esp_err_t coap_generate_rpc_optlist() {
     return ESP_OK;
 }
 
-
 static esp_err_t coap_client_attributes_observe(unsigned char *token) {
 
     size_t tokenlength;
@@ -581,6 +580,53 @@ esp_err_t coap_client_attributes_post(char *content) {
     }
 
     return coap_client_post(content, &optlist_attributes);
+}
+
+esp_err_t coap_client_send_rpc_response(int id, char *payload) {
+
+    char buff[128];
+    u_char buf[4];
+
+    uint8_t pdu_token[8];
+    size_t tokenlength;
+    coap_pdu_t *request = NULL;
+
+    request = coap_new_pdu(COAP_MESSAGE_CON, COAP_REQUEST_POST, coap_session);
+    if (!request) {
+        ESP_LOGE(TAG, "Error en coap_new_pdu()");
+        return ESP_FAIL;
+    }
+    
+    /* Add in an unique token */
+    coap_session_new_token(coap_session, &tokenlength, pdu_token);
+    if (coap_add_token(request, tokenlength, pdu_token) == 0) {
+        ESP_LOGE(TAG, "Error en coap_add_token()");
+        return ESP_FAIL;
+    }
+
+    if (coap_add_option(request, COAP_OPTION_CONTENT_FORMAT, coap_encode_var_safe(buf, sizeof (buf), COAP_MEDIATYPE_TEXT_PLAIN), buf) == 0) {
+        ESP_LOGE(TAG, "Error en coap add option");
+        return ESP_FAIL;
+    }
+
+    sprintf(buff, "api/v1/%s/rpc/%d", DEVICE_TOKEN, id);
+    ESP_LOGI(TAG, "RPC response URI: %s", buff);
+    if (coap_add_option(request, COAP_OPTION_URI_PATH, strlen(buff), (u_char*) buff) == 0) {
+        ESP_LOGE(TAG, "Error en coap add option");
+        return ESP_FAIL;
+    }
+
+    if (coap_add_data(request, strlen(payload), (const uint8_t*) payload) == 0) {
+        ESP_LOGE(TAG, "Error en coap add data");
+        return ESP_FAIL;
+    }
+
+    if (coap_send(coap_session, request) == COAP_INVALID_MID) {
+        ESP_LOGE(TAG, "Error en coap_send()");
+        return ESP_FAIL;
+    }
+    
+    return ESP_OK;   
 }
 
 #endif

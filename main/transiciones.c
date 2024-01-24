@@ -176,6 +176,8 @@ void trans_estado_to_erase(transicion_t trans){
 
 void process_rpc_request(cJSON *request) {
 
+
+    int request_id = (int) cJSON_GetNumberValue(cJSON_GetObjectItem(request, "id"));
     cJSON *method = cJSON_GetObjectItem(request, "method");
     if (method == NULL) {
         cJSON_Delete(request);
@@ -183,8 +185,31 @@ void process_rpc_request(cJSON *request) {
     }
 
     char *method_name = cJSON_GetStringValue(method);
-    if (strcmp(method_name, "toggle_parametros_ambientales") == 0) {
-        ESP_LOGW(TAG, "TODO");
+    if (strcmp(method_name, "setPeriodoSensor") == 0) {
+        int p = (int) cJSON_GetNumberValue(cJSON_GetObjectItem(request, "params"));
+        sensores_set_periodo(p);
+    }
+
+    else if (strcmp(method_name, "getPeriodoSensor") == 0) {
+        char response_buff[64];
+        sprintf(response_buff, "%d", sensores_get_periodo());
+        ESP_LOGI(TAG, "Frecuencia: %s", response_buff);
+        thingsboard_send_rpc_response(request_id, response_buff);
+    }
+
+    else if (strcmp(method_name, "getAforoActivo") == 0) {
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddBoolToObject(json, "enabled", aforo_activo());
+        char *payload = cJSON_PrintUnformatted(json);
+        thingsboard_send_rpc_response(request_id, payload);
+
+        cJSON_free(payload);
+        cJSON_Delete(json);
+    }
+
+    else if (strcmp(method_name, "toggleAforo") == 0) {
+        if (aforo_activo()) aforo_stop();
+        else estimacion_de_aforo();
     }
 
     cJSON_Delete(request);
