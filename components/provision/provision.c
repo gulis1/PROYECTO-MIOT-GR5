@@ -26,6 +26,7 @@ const static char *TAG = "PROVISION";
 static prov_info_t PROVISION_INFO;
 nvs_handle_t nvsHandle;
 
+static bool provision_was_needed = false;
 
 
 #if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
@@ -480,7 +481,7 @@ esp_err_t init_provision(void *event_handler) {
 
         // TODO: aplicación de provisionamiento.
         // De forma temporal se leen los datos el menuconfig.
-        ESP_LOGW(TAG, "No hay datos de provisionamiento en flash, usando los del menuconfig.");
+        provision_was_needed = true;
         start_provisioning();
     }
     else {
@@ -497,5 +498,9 @@ prov_info_t* get_wifi_info() {
 }
 
 void stop_provisioning() {
+    nvs_commit(nvsHandle);
     nvs_close(nvsHandle);
+    if (provision_was_needed)
+        esp_restart();
+    
 }
