@@ -6,14 +6,13 @@
 #include <driver/i2c.h>
 #include <esp_event.h>
 #include <esp_timer.h>
-#include "main.h"
-#include "cJSON.h"
-//#include "configuracion_hora.h"
+#include <nvs_flash.h>
 
 const static char* TAG = "Lectura de sensores";
 
-static esp_timer_handle_t periodic_timer;
+static int32_t PERIODO_TEMP;
 
+static esp_timer_handle_t periodic_timer;
 static sgp30_dev_t main_sgp30_sensor;
 
 
@@ -24,33 +23,20 @@ static data_sensores_t DATA_SENSORES;
 ESP_EVENT_DEFINE_BASE(SENSORES_EVENT) ;
 
 
-char* data_sensores_to_json_string(data_sensores_t* info) {
-
-    cJSON *root = cJSON_CreateObject();
-
-     /// la idea es devolver un objeto json 
-    cJSON_AddNumberToObject(root,"temperatura",info->temp_dato);
-    cJSON_AddNumberToObject(root,"eCO2",info->CO2_dato);
-    cJSON_AddNumberToObject(root,"TVOC",info->TVOC_dato);
-
-    char* json_string = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-
-    return json_string;
-}
-
-
 static void lectura_sensores_callback(){
 
     float temp;
+    float hum;
     sgp30_IAQ_measure(&main_sgp30_sensor);
     readTemperature(0, &temp);
+    readHumidity(0,&hum);
     // ESP_LOGI(TAG, "TVOC: %d,  eCO2: %d y la temperatura: %.3f",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2, temp);
 
     // Estructuracion de los datos para enviar 
     DATA_SENSORES.CO2_dato = main_sgp30_sensor.eCO2;
     DATA_SENSORES.TVOC_dato = main_sgp30_sensor.TVOC;
     DATA_SENSORES.temp_dato = temp;
+    DATA_SENSORES.hum_dato = hum;
 
     void *dato_sensores = &DATA_SENSORES;
 
@@ -72,6 +58,13 @@ esp_err_t sensores_init(void *sensores_handler) {
     
     sgp30_init(&main_sgp30_sensor, (sgp30_read_fptr_t)main_i2c_read, (sgp30_write_fptr_t)main_i2c_write);
 
+    // Buscar periodo en la NVS.
+    nvs_handle handle_nvs;
+    err = nvs_open("nvs", NVS_READONLY, &handle_nvs);
+    if (err != ESP_OK || nvs_get_i32(handle_nvs, "periodo_sensor", &PERIODO_TEMP) != ESP_OK)
+        PERIODO_TEMP = CONFIG_PERIODO_TEMP;
+    
+    nvs_close(handle_nvs);
 
     const esp_timer_create_args_t periodic_timer_args = {
         .callback = lectura_sensores_callback,
@@ -97,7 +90,7 @@ esp_err_t sensores_init(void *sensores_handler) {
 
 void calibracion() {
 
-    for (int i = 0; i < 1; i++) { 
+    for (int i = 0; i < 15; i++) { 
         sgp30_IAQ_measure(&main_sgp30_sensor);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         ESP_LOGI(TAG, "SGP30 Calibrando... TVOC: %d,  eCO2: %d",  main_sgp30_sensor.TVOC, main_sgp30_sensor.eCO2);
@@ -116,11 +109,34 @@ esp_err_t start_calibracion(){
 
 esp_err_t sensores_start() {
 
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, CONFIG_PERIODO_TEMP * 1000000));
-    return ESP_OK;
+    if (PERIODO_TEMP > 0) {
+        esp_err_t err = esp_timer_start_periodic(periodic_timer, PERIODO_TEMP * 1000000);
+        return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
+    }
+    
+    else return ESP_OK;
 }
 
 esp_err_t sensores_stop(){    
-    ESP_ERROR_CHECK(esp_timer_stop(periodic_timer));
-    return ESP_OK;
+    esp_err_t err = esp_timer_stop(periodic_timer);
+    return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
+}
+
+esp_err_t sensores_set_periodo(int p) {
+
+    sensores_stop();
+    PERIODO_TEMP = p;
+    if (PERIODO_TEMP > 0)
+        sensores_start();   
+
+    nvs_handle handle_nvs;
+    nvs_open("nvs", NVS_READWRITE, &handle_nvs);
+    nvs_set_i32(handle_nvs, "periodo_sensor", (int32_t) p);
+    nvs_close(handle_nvs);  
+
+    return ESP_OK;  
+}
+
+int sensores_get_periodo() {
+    return PERIODO_TEMP;
 }

@@ -507,8 +507,6 @@ esp_err_t callback_bluetooth(){
     
 }
 
-
-
 esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 {
     esp_err_t err;
@@ -557,8 +555,6 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
         return err;
     }
 
-
-
     const esp_timer_create_args_t periodic_timer_args = {
         .callback = (void*) callback_bluetooth,
         /* name is optional, but may help identify the timer when debugging */
@@ -582,12 +578,20 @@ esp_err_t bluetooth_init_finish_provision(void *bluetooth_handler)
 
 }
 
+esp_err_t estimacion_de_aforo() {
 
-esp_err_t estimacion_de_aforo(){
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer_bluetooth,  8 * 1000000)); //CONFIG_PERIODO_TEMP
-    return ESP_OK;
+    esp_err_t err = esp_timer_start_periodic(periodic_timer_bluetooth,  5 * 1000000);
+    return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
 }
 
+esp_err_t aforo_stop() {
+    esp_err_t err = esp_timer_stop(periodic_timer_bluetooth);
+    return err == ESP_ERR_INVALID_STATE ? ESP_OK : err;
+}
+
+int aforo_activo() {
+    return esp_timer_is_active(periodic_timer_bluetooth);
+}
 
 
 

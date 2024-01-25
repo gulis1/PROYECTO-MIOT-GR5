@@ -121,9 +121,6 @@ esp_err_t wifi_init_sta(void *wifi_handler)
         ESP_LOGE(TAG, "Error en esp_wifi_set_mode: %s", esp_err_to_name(err));
         return err;
     }
-
-    // TODO: recibir un handler por el parámetro
-    // para enviar eventos al main.
     
     return ESP_OK;
 }
@@ -162,4 +159,8 @@ esp_err_t wifi_connect(char *ssid, char *password) {
     }    
 
     return ESP_OK;
+}
+
+esp_err_t wifi_disconnect() {
+    return esp_wifi_disconnect();
 }

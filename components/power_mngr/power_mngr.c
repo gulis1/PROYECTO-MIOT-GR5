@@ -15,6 +15,7 @@ static esp_timer_handle_t timer_reloj;
 static int segundos_iniciales = CONFIG_HORA_INICIO * 3600 + CONFIG_MINUTO_INICIO * 60;
 static int segundos_finales = CONFIG_HORA_FINAL * 3600 + CONFIG_MINUTO_FINAL * 60;
 
+
 static int hora_actual_segundos() {
 
     time_t ahora;
@@ -32,6 +33,9 @@ static void callback_reloj(void *arg) {
 
     int segundos_actuales = hora_actual_segundos();
 
+    ESP_LOGI(TAG, "Segundos actuales: %d", segundos_actuales);
+    ESP_LOGI(TAG, "Segundos iniciales: %d", segundos_iniciales);
+    ESP_LOGI(TAG, "Segundos finales: %d", segundos_finales);
     // Si el rango está en el mismo día.
     if (segundos_finales > segundos_iniciales && (segundos_actuales <= segundos_iniciales || segundos_actuales >= segundos_finales))
         esp_event_post(DEEP_SLEEP_EVENT, PASAR_A_DORMIR, NULL, 0, portMAX_DELAY);
@@ -46,7 +50,7 @@ esp_err_t power_manager_init(void *hora_handler) {
 
     //configuracion parametros
     // esp_pm_config_t power_config = {
-    //     .max_freq_mhz=240,
+    //     .max_freq_mhz=160,
     //     .min_freq_mhz=80,
     //     .light_sleep_enable=true
     // };
@@ -97,13 +101,11 @@ void deep_sleep() {
         segundos_para_despertar = segundos_iniciales - segundos_actuales;
     else 
         segundos_para_despertar = 86400 - segundos_actuales + segundos_iniciales;
- 
+    
+    ESP_LOGI(TAG, "Despertándose en %d segundos", segundos_para_despertar);
     esp_sleep_enable_timer_wakeup(segundos_para_despertar * 1000 * 1000);
     esp_deep_sleep_start();
 }
 
-
-//TODOANGEL:PUEDEDARSE EL CASO DE QUE QUERAMOS QUE TRABASE DE MADRUGADA YO CREO QUE NO 
-//TODOANGEL: Puede pasarse el esp_err_t err a global
 
 

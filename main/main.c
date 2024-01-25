@@ -13,8 +13,10 @@
 #include "power_mngr.h"
 #include "thingsboard.h"
 #include "bluetooth.h"
+#include "boton.h"
 
 const static char* TAG = "main.c";
+
 
 void main_task() {
 
@@ -32,6 +34,11 @@ void main_task() {
             continue;
         }
 
+        if (transicion.tipo == TRANS_ERASE_FLASH) {
+            trans_estado_to_erase(transicion);
+            esp_restart();
+        }
+      
         switch (estado_actual) {
 
             case ESTADO_SIN_PROVISION:
@@ -47,8 +54,8 @@ void main_task() {
                 break;
 
             case ESTADO_CONECTADO:
-                 estado_actual = trans_estado_conectado(transicion);
-                 break;
+                estado_actual = trans_estado_conectado(transicion);
+                break;
         
             case ESTADO_HORA_CONFIGURADA:
                 estado_actual = trans_estado_hora_configurada(transicion);
@@ -56,11 +63,11 @@ void main_task() {
 
             case ESTADO_THINGSBOARD_READY:
                 estado_actual = trans_estado_thingsboard_ready(transicion);
-                break;   
-    
+                break;
+
             default:
                 ESP_LOGE(TAG, "Estado desconocido: %d.", estado_actual);
-        }
+        }    
     }
 }
 
@@ -68,7 +75,6 @@ void main_task() {
 void app_main(void) {
 
     esp_err_t err;
-
     ESP_LOGI(TAG, "Starting firmware version %s", CONFIG_APP_PROJECT_VER);
 
     // Iniciación flash.
@@ -77,14 +83,21 @@ void app_main(void) {
         ESP_LOGE(TAG, "Error en nvs_flash_init: %s", esp_err_to_name(err));
         return;
     }
-        // Creación del default event loop.
+
+    // Creación del default event loop.
     err = esp_event_loop_create_default();
-        if (err != ESP_OK) {
+    if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en esp_event_loop_create_default: %s", esp_err_to_name(err));
         return;
     }
 
-    ESP_LOGI(TAG, "Connecting to wifi...");
+    // Iniciación boton para el erase_flash
+    err = boton_init(boton_handler);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error en boton_init: %s", esp_err_to_name(err));
+        return;
+    }
+
     err = wifi_init_sta(wifi_handler);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error en wifi: %s", esp_err_to_name(err));
@@ -108,14 +121,14 @@ void app_main(void) {
   
     err = tyme_sync_init(hora_handler);
     if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en sntp_init_hora: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Error en sntp_init_hora: %s", esp_err_to_name(err));
         return;
     }
 
     err = power_manager_init(power_manager_handler);
     if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
-    return;
+        ESP_LOGE(TAG, "Error en iniciar power_manager %s", esp_err_to_name(err));
+        return;
     }
 
     TaskHandle_t task_handle;

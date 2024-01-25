@@ -12,5 +12,6 @@
 #include "lwip/sys.h"
 
 
-esp_err_t wifi_init_sta(void *wifi_handler);                                
+esp_err_t wifi_init_sta(void *wifi_handler);           
+esp_err_t wifi_disconnect();                     
 esp_err_t wifi_connect(char *ssid, char *password);

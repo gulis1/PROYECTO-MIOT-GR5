@@ -26,6 +26,7 @@ const static char *TAG = "PROVISION";
 static prov_info_t PROVISION_INFO;
 nvs_handle_t nvsHandle;
 
+static bool provision_was_needed = false;
 
 
 #if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
@@ -137,7 +138,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 err = nvs_set_str(nvsHandle, "wifi_pass", PROVISION_INFO.wifi_pass);
                 ESP_LOGE(TAG, "Error setStr: %s", esp_err_to_name(err));
                 nvs_set_str(nvsHandle, "wifi_ssid", PROVISION_INFO.wifi_ssid);
-                nvs_close(nvsHandle);
                 void *data = &PROVISION_INFO;
                 esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
                 break;
@@ -196,6 +196,7 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
                     dataPos++;
                     aulaSize++;
                     PROVISION_INFO.data_piso = strndup(input,pisoSize);
+                    nvs_set_str(nvsHandle, "piso", PROVISION_INFO.data_piso);
                 }
                 else
                 {
@@ -209,6 +210,7 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
                     dataPos++;
                     urlSize++;
                     PROVISION_INFO.data_aula = strndup(input+pisoSize+1,aulaSize-1);
+                    nvs_set_str(nvsHandle, "aula", PROVISION_INFO.data_aula);
                 }
                 else
                 {
@@ -221,6 +223,7 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
                 {
                     dataPos++;
                     PROVISION_INFO.data_url = strndup(input+pisoSize+aulaSize+1,urlSize-1);
+                    nvs_set_str(nvsHandle, "thingsboard_url", PROVISION_INFO.data_url);
                 }
                 else
                 {
@@ -241,31 +244,6 @@ esp_err_t custom_prov_data_handler(uint32_t session_id, const uint8_t *inbuf, ss
     *outlen = strlen(response) + 1; /* +1 for NULL terminating byte */
 
     return ESP_OK;
-}
-
-static void wifi_prov_print_qr(const char *name, const char *username, const char *pop, const char *transport)
-{
-    if (!name || !transport) {
-        ESP_LOGW(TAG, "Cannot generate QR code payload. Data missing.");
-        return;
-    }
-    char payload[150] = {0};
-    if (pop) {
-#if CONFIG_EXAMPLE_PROV_SECURITY_VERSION_1
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, pop, transport);
-#elif CONFIG_EXAMPLE_PROV_SECURITY_VERSION_2
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"username\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, username, pop, transport);
-#endif
-    } else {
-        snprintf(payload, sizeof(payload), "{\"ver\":\"%s\",\"name\":\"%s\"" \
-                    ",\"transport\":\"%s\"}",
-                    PROV_QR_VERSION, name, transport);
-    }
-
 }
 
 void start_provisioning()
@@ -468,7 +446,8 @@ esp_err_t init_provision(void *event_handler) {
     }
 
     err = nvs_get_str(nvsHandle, "wifi_ssid", NULL, &len);
-    if (/*err == ESP_OK*/false) {
+    ESP_LOGI(TAG, "Error recibido: %s", esp_err_to_name(err));
+    if (err == ESP_OK) {
 
         // Aquí se entra si se encuentran datos de provisionamiento
         // en el NVS.
@@ -478,21 +457,32 @@ esp_err_t init_provision(void *event_handler) {
         ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "wifi_pass", NULL, &len));
         PROVISION_INFO.wifi_pass = malloc(len);
         ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "wifi_pass", PROVISION_INFO.wifi_pass, &len));
-        nvs_close(nvsHandle);
+
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "piso", NULL, &len));
+        PROVISION_INFO.data_piso = malloc(len);
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "piso", PROVISION_INFO.data_piso, &len));
+
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "aula", NULL, &len));
+        PROVISION_INFO.data_aula = malloc(len);
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "aula", PROVISION_INFO.data_aula, &len));
+
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "thingsboard_url", NULL, &len));
+        PROVISION_INFO.data_url = malloc(len);
+        ESP_ERROR_CHECK(nvs_get_str(nvsHandle, "thingsboard_url", PROVISION_INFO.data_url, &len));
+
         ESP_LOGI(TAG,"el wifi leido de la nvs es: ssid=%s y password:%s",PROVISION_INFO.wifi_ssid, PROVISION_INFO.wifi_pass);
         void *data = &PROVISION_INFO;
         esp_event_post(PROVISION_EVENT, PROV_DONE, &data, sizeof(PROVISION_INFO), portMAX_DELAY);
     } 
-    else if (/*err == ESP_ERR_NVS_NOT_FOUND*/true) {
+    else if (err == ESP_ERR_NVS_NOT_FOUND) {
         
         // Aquí se entra si no se encuentran datos de provisionamiento
         // en el NVS.
 
         // TODO: aplicación de provisionamiento.
         // De forma temporal se leen los datos el menuconfig.
-        ESP_LOGW(TAG, "No hay datos de provisionamiento en flash, usando los del menuconfig.");
+        provision_was_needed = true;
         start_provisioning();
-
     }
     else {
 
@@ -505,4 +495,12 @@ esp_err_t init_provision(void *event_handler) {
 
 prov_info_t* get_wifi_info() {
     return &PROVISION_INFO;
+}
+
+void stop_provisioning() {
+    nvs_commit(nvsHandle);
+    nvs_close(nvsHandle);
+    if (provision_was_needed)
+        esp_restart();
+    
 }
